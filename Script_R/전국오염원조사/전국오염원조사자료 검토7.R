@@ -6,7 +6,7 @@ library(readxl)
 library(writexl)
 
 ## 반올림 사용자 정의 함수 로드
-source("E:/Coding/Script_R/Function/round2func.R")
+source("Script_R/Function/round2func.R")
 
 ## 공통파일(단위유역별 점유율) 불러오기
 share <- read_excel("전국오염원조사/단위유역별 점유율.xlsx")
@@ -139,6 +139,8 @@ population_sum_s <- population_sum %>%
   select(시군구, everything(), -권역)
 # filter(시군구 != "합계")
 
+
+##______________________________________________________________________________
 population_sum <- population_sum %>% filter(단위유역 != "합계")
 
 ## 권역별 정리
@@ -288,6 +290,8 @@ waterusage_sum_s <- waterusage_sum %>%
   select(시군구, everything(), -권역)
 # filter(시군구 != "합계")
 
+
+##______________________________________________________________________________
 waterusage_sum <- waterusage_sum %>% filter(단위유역 != "합계")
 
 ## 권역별 정리
@@ -479,7 +483,7 @@ livestock_sum_s <- livestock_sum %>%
 # filter(시군구 != "합계")
 
 
-## *****************************************************************************
+##______________________________________________________________________________
 ## 시군별 합계 자료 삭제(단위유역 기준 자료로)
 livestock_sum <- livestock_sum %>% filter(단위유역 != "합계")
 
@@ -739,7 +743,7 @@ industry_sum3_s <- industry_sum3 %>%
   select(시군구, everything(), -권역)
 # filter(시군구 != "합계")
 
-## *****************************************************************************
+##______________________________________________________________________________
 ## 시군별 합계 자료 삭제(단위유역 기준 자료로)
 industry_sum1 <- industry_sum1 %>% filter(단위유역 != "합계")
 industry_sum2 <- industry_sum2 %>% filter(단위유역 != "합계")
@@ -984,7 +988,7 @@ landuse_sum_s <- landuse_sum %>%
 # filter(시군구 != "합계")
 
 
-## *****************************************************************************
+##______________________________________________________________________________
 ## 시군별 합계 자료 삭제(단위유역 기준 자료로)
 landuse_sum <- landuse_sum %>% filter(단위유역 != "합계")
 
@@ -1170,6 +1174,8 @@ fishfarm_sum_s <- fishfarm_sum %>%
   select(시군구, everything(), -권역)
 # filter(시군구 != "합계")
 
+
+##______________________________________________________________________________
 fishfarm_sum <- fishfarm_sum %>% filter(단위유역 != "합계")
 
 ## 권역별 정리
@@ -1308,6 +1314,8 @@ landfill_count_s <- landfill_count %>%
   select(시군구, everything(), -권역) %>%
   filter(시군구 != "합계")
 
+
+##______________________________________________________________________________
 landfill_count <- landfill_count %>% filter(단위유역 != "합계")
 
 
@@ -1426,6 +1434,8 @@ landfill_sum_s <- landfill_sum %>%
   select(시군구, everything(), -권역)
 # filter(시군구 != "합계")
 
+
+##______________________________________________________________________________
 landfill_sum <- landfill_sum %>% filter(단위유역 != "합계")
 
 
@@ -1499,7 +1509,7 @@ alldata_s <- bind_rows(
 )
 
 ## 최종 데이터 정리
-alldata_s <- alldata_s %>%
+alldata_s %<>%
   filter(
     분류 != "1종", 분류 != "2종", 분류 != "3종", 분류 != "4종", 분류 != "5종",
     분류 != "가두리", 분류 != "도전양식", 분류 != "유수식", 분류 != "지수식"
