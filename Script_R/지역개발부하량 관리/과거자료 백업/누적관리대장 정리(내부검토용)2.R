@@ -6,11 +6,11 @@ library(writexl)
 ################################################################################
 
 ## 지역개발부하량 및 기승인 기초자료(기본계획) 불러오기
-base <- read_excel("Data/지역개발부하량.xlsx")
+base <- read_excel("지역개발부하량 관리/지역개발부하량.xlsx")
 
 ## 파일 경로 목록 만들기
 files <- list.files(
-  path = "Data/누적관리대장/",
+  path = "지역개발부하량 관리/누적관리대장/",
   pattern = "*.xls", full.names = T
 )
 

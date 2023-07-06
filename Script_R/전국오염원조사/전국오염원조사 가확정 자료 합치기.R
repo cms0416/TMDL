@@ -21,8 +21,6 @@ livestock <- files %>%
 # 제목 행 추가(기존 자료와 합치기 위해 동일한 갯수로 추가)
 livestock %<>% add_row(`...1` = rep(NA, 5), .before = 1)
 
-# "검증상태" 열 삭제
-livestock %<>% select(-1)
 
 # 파일 내보내기
 write_xlsx(livestock, 

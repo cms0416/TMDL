@@ -1,5 +1,6 @@
 ###############################################################################################################
 #
+# chromeDriver: https://sites.google.com/chromium.org/driver/
 # selenium 실행 : 윈도우에서 cmd를 통해 명령 프롬프트를 연 후, 아래 명령어를 입력(cmd창은 계속 열어둔다.)
 #
 # cd C:\Rselenium
@@ -8,7 +9,7 @@
 ###############################################################################################################
 
 ################################################################################
-## 라이브러리 로드
+### 라이브러리 로드
 library(tidyverse)
 library(data.table)
 library(RSelenium)
@@ -20,8 +21,8 @@ library(writexl)
 ################################################################################
 
 
-# 한탄A 과거자료('07~'20) 불러오기
-hantan <- read_excel("총량측정망/총량측정망_한탄A_0720.xlsx")
+## 한탄A 과거자료('07~'20) 불러오기
+hantan <- read_excel("수질 분석/총량측정망_한탄A_0720.xlsx")
 
 
 ## 4445번 포트와 크롬 연결
@@ -54,25 +55,25 @@ Sys.sleep(0.5)
 remDr$findElement(using = "xpath", value = "/html/body/div[3]/div[2]/form[1]/div[2]/div[3]/div[1]/div[1]/div[4]/div[1]/div[1]/ul[1]/li/button[2]")$clickElement()
 
 
-## ----- 낙본A --------------------------------------------------------------------
-# 낙동강 수계 펼치기
+### ----- 낙본A --------------------------------------------------------------------
+## 낙동강 수계 펼치기
 remDr$findElement(using = "xpath", value = "/html/body/div[3]/div[2]/form[1]/div[2]/div[3]/div[1]/div[1]/div[4]/div[1]/div[1]/ul[2]/li/button[1]")$clickElement()
 
 ## 페이지 로딩 시간 대기
 Sys.sleep(0.5)
 
-# 낙동강 펼치기
+## 낙동강 펼치기
 remDr$findElement(using = "xpath", value = "/html/body/div[3]/div[2]/form[1]/div[2]/div[3]/div[1]/div[1]/div[4]/div[1]/div[1]/ul[2]/li/ul/li/button[1]")$clickElement()
 
-# 안동댐 펼치기
+## 안동댐 펼치기
 remDr$findElement(using = "xpath", value = "/html/body/div[3]/div[2]/form[1]/div[2]/div[3]/div[1]/div[1]/div[4]/div[1]/div[1]/ul[2]/li/ul/li/ul[1]/li/button[1]")$clickElement()
 
 ## 페이지 로딩 시간 대기
 Sys.sleep(0.5)
 
-# 낙본A 선택
+## 낙본A 선택
 remDr$findElement(using = "xpath", value = "/html/body/div[3]/div[2]/form[1]/div[2]/div[3]/div[1]/div[1]/div[4]/div[1]/div[1]/ul[2]/li/ul/li/ul[1]/li/ul/li[1]/button[1]")$clickElement()
-## --------------------------------------------------------------------------------
+### --------------------------------------------------------------------------------
 
 
 ## 지점 선택 팝업창 닫기(확인 버튼 클릭)
@@ -88,8 +89,8 @@ remDr$findElement(using = "xpath", value = '//*[@id="e_month"]/option[text() = "
 ################################################################################
 
 
-## 지정된 기간 동안 자료 조회 후 추출하여 연차별 병합
-for (i in 2007:2022) { # <--------------- 시작연도 변경 시 아래 obs 병합 시작 연도도 동일하게 변경
+### 지정된 기간 동안 자료 조회 후 추출하여 연차별 병합
+for (i in 2007:2023) { # <--------------- 시작연도 변경 시 아래 obs 병합 시작 연도도 동일하게 변경
   ## 자료 조회 기간 연도 설정
   remDr$findElement(using = "xpath", value = paste0('//*[@id="s_year"]/option[text() = ', i, "]"))$clickElement() # 시작 연도
   remDr$findElement(using = "xpath", value = paste0('//*[@id="e_year"]/option[text() = ', i, "]"))$clickElement() # 종료 연도
@@ -123,7 +124,7 @@ for (i in 2007:2022) { # <--------------- 시작연도 변경 시 아래 obs 병
 ################################################################################
 
 
-## 데이터 정리
+### 데이터 정리
 obs <- obs0 %>%
   # 결측 행 제외
   filter(!is.na(번호)) %>%
@@ -159,7 +160,7 @@ obs <- obs %>% filter(총량지점명 %in% c(
 
 
 ################################################################################
-## 한탄A 과거자료('07~'20) 변경
+### 한탄A 과거자료('07~'20) 변경
 
 # 한탄A 과거자료('07~'20) 제외
 obs <- obs[!(obs$총량지점명 == "한탄A" & obs$연도 < 2021), ]
@@ -172,5 +173,8 @@ obs <- obs %>% arrange(총량지점명, 일자)
 
 ################################################################################
 
-## 엑셀 파일 내보내기_writexl
-write_xlsx(obs, path = "총량측정망/총량측정망0722.xlsx")
+
+### 엑셀 파일 내보내기_writexl
+write_xlsx(obs, path = "수질 분석/총량측정망0723.xlsx")
+
+
