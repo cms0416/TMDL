@@ -521,8 +521,8 @@ addr_test <- waterusage %>% select(-c(연도, 하수도요금여부)) %>%
     동리1 = ifelse(str_detect(동리_check, str_c(" ", 동리1, " ")), 동리1, NA),
     동리2 = ifelse(str_detect(동리_check, str_c(" ", 동리2, " ")), 동리2, NA),
     # 도로명
-    도로명1 = str_extract(주소1수정, "[가-힣A-Za-z0-9]{1,}(로|길)(?!읍|면|동|가|리|로|길)"),
-    도로명2 = str_extract(주소2수정, "[가-힣A-Za-z0-9]{1,}(로|길)(?!읍|면|동|가|리|로|길)"),
+    도로명1 = str_extract(주소1수정, "[가-힣A-Za-z0-9]{1,}(로|길)(?!읍|면|동|[0-9]{1,}가|리|로|길)"),
+    도로명2 = str_extract(주소2수정, "[가-힣A-Za-z0-9]{1,}(로|길)(?!읍|면|동|[0-9]{1,}가|리|로|길)"),
     # 도로명 확인(앞뒤로 여백 추가해서 일부만 일치하는 경우 방지)
     도로명1 = ifelse(str_detect(도로명_check, str_c(" ", 도로명1, " ")), 도로명1, NA),
     도로명2 = ifelse(str_detect(도로명_check, str_c(" ", 도로명2, " ")), 도로명2, NA),
@@ -690,38 +690,38 @@ library(progress)
 ## REST API 키(https://developers.kakao.com/)
 KAKAO_MAP_API_KEY <- "9e9a85a9ec8362e009da2f7bc4b3a09c"
 
+## ------ 도로명 주소 ----------------------------------------------------------
 ## 수용가번호 및 대표주소만 추출
-address <- addr_test1 %>%
-  filter(!(시군 %in% c("강릉시", "고성군", "삼척시"))) %>%
-  filter(주소코드확인 == "x") %>%
+address_doro <- addr_test1 %>%
+  # filter(!(시군 %in% c("강릉시", "고성군", "삼척시"))) %>%
+  # filter(도로명주소추가확인 == "Y") %>%
   select(코드, 도로명주소, 사용량합계) %>%
   filter(!is.na(도로명주소)) %>%
   rowid_to_column(var = "ID")
 
-address_list <- address$도로명주소
+address_doro_list <- address_doro$도로명주소
 
 ## progress bar 설정
-pb <- progress_bar$new(
+pb_doro <- progress_bar$new(
   format = " Progress: [:bar] :current / :total (:percent), Estimated completion time::eta",
-  total = nrow(address), # 총 tick 개수 (default 100)
+  total = nrow(address_doro), # 총 tick 개수 (default 100)
   clear = FALSE, # 종료 후에도 진행 경과 출력 결과 유지 (default TRUE)
   width = 80 # 진행 경과 막대 너비
 )
 
 result_doro <- data.frame()
-# result_jibun <- data.frame()
 
-for (i in 1:nrow(address)) {
+for (i in 1:nrow(address_doro)) {
   place_list <- GET(
     url = "https://dapi.kakao.com/v2/local/search/address.json",
-    query = list(query = address_list[i]),
+    query = list(query = address_doro_list[i]),
     add_headers(Authorization = paste0("KakaoAK ", KAKAO_MAP_API_KEY))
   ) %>%
     content(as = "text") %>%
     fromJSON()
 
   # 수용가번호 및 기존 주소 불러오기
-  temp_addr <- address %>% filter(ID == i)
+  temp_addr_doro <- address_doro %>% filter(ID == i)
 
   ## 도로명주소 : 주소 검색결과가 없는 경우 대비 test열(NA값 입력) 추가
   temp_doro <- bind_cols(place_list$documents$road_address, tibble(test = NA))
@@ -743,38 +743,86 @@ for (i in 1:nrow(address)) {
       )
   }
 
-  temp_doro <- bind_cols(temp_addr, temp_doro)
+  temp_doro <- bind_cols(temp_addr_doro, temp_doro)
 
   result_doro <- bind_rows(result_doro, temp_doro)
 
-  ## 지번주소
-  # temp_jibun <- bind_cols(temp_addr, place_list$documents$address)
-  #
-  # result_jibun <- bind_rows(result_jibun, temp_jibun)
 
   ## 진행상황 확인
-  pb$tick()
+  pb_doro$tick()
 }
 
 
-# result_jibun2 <- result_jibun %>%
-#   select(-6, -9) %>%
-#   set_names("ID", "수용가번호", "원본주소", "지번주소", "법정동코드", "본번", "산", "시군",
-#             "읍면동", "동리", "부번", "경도_지번", "위도_지번")
+## ------ 지번 주소 ------------------------------------------------------------
+## 수용가번호 및 대표주소만 추출
+address_jibun <- addr_test1 %>%
+  # filter(!(시군 %in% c("강릉시", "고성군", "삼척시"))) %>%
+  # filter(지번주소추가확인 == "Y") %>%
+  select(코드, 지번주소, 사용량합계) %>%
+  filter(!is.na(지번주소)) %>%
+  rowid_to_column(var = "ID") 
+
+address_jibun_list <- address_jibun$지번주소
+
+## progress bar 설정
+pb_jibun <- progress_bar$new(
+  format = " Progress: [:bar] :current / :total (:percent), Estimated completion time::eta",
+  total = nrow(address_jibun), # 총 tick 개수 (default 100)
+  clear = FALSE, # 종료 후에도 진행 경과 출력 결과 유지 (default TRUE)
+  width = 80 # 진행 경과 막대 너비
+)
+
+result_jibun <- data.frame()
+
+for (i in 1:nrow(address_jibun)) {
+  place_list <- GET(
+    url = "https://dapi.kakao.com/v2/local/search/address.json",
+    query = list(query = address_jibun_list[i]),
+    add_headers(Authorization = paste0("KakaoAK ", KAKAO_MAP_API_KEY))
+  ) %>%
+    content(as = "text") %>%
+    fromJSON()
+  
+  # 수용가번호 및 기존 주소 불러오기
+  temp_addr_jibun <- address_jibun %>% filter(ID == i)
+  
+  ## 지번주소
+  temp_jibun <- bind_cols(temp_addr_jibun, place_list$documents$address)
+  
+  result_jibun <- bind_rows(result_jibun, temp_jibun)
+  
+  ## 진행상황 확인
+  pb_jibun$tick()
+}
 
 
+## ------ 검색 결과 정리 -------------------------------------------------------
+## 도로명 주소
 result_doro2 <- result_doro %>%
-  set_names(c(
-    "ID", "코드", "원본주소", "사용량합계", "도로명주소", "건물명", "도로명",
-    "건물본번", "건물부번", "시군", "동리", "경도_도로", "위도_도로"
-  )) %>%
-  mutate(주소코드 = str_c(시군, 동리, sep = " "))
+  mutate(도로명검색결과 = ifelse(is.na(address_name), "X", "O")) %>% 
+  select(코드, 도로명주소, 도로명검색결과)
+
+## 지번 주소
+result_jibun2 <- result_jibun %>%
+  mutate(지번검색결과 = ifelse(is.na(address_name), "X", "O")) %>% 
+  select(코드, 지번주소, 지번검색결과)
 
 
+addr_test2 <- addr_test1 %>% 
+  left_join(result_doro2, by = c("코드", "도로명주소")) %>% 
+  left_join(result_jibun2, by = c("코드", "지번주소")) %>% 
+  mutate(도로명주소확인 = ifelse(is.na(도로명검색결과), 도로명주소확인, 도로명검색결과),
+         지번주소확인 = ifelse(is.na(지번검색결과), 지번주소확인, 지번검색결과), 
+         주소확인 = case_when(
+           도로명주소확인 == "O" & 지번주소확인 == "O" ~ "OK",
+           도로명주소확인 == "O" | 지번주소확인 == "O" ~ "OK",
+           TRUE ~ "주소 수정 필요"
+           )
+         ) %>% 
+  select(-c(업종:사용량합계), -코드, -c(도로명주소추가확인:지번검색결과)) %>% 
+  relocate(c(구분, 수용가명, 상호명), .after = 수용가번호)
 
-# temp_doro <- bind_cols(address %>% filter(ID == i),
-#                       place_list$documents$road_address) %>%
-#   select(-starts_with("."))
+
 
 ##########  물사용량 및 주소코드 최종 정리  ############################################
 
