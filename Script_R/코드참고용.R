@@ -237,19 +237,19 @@ df %>% group_by(var1, var2) %>%
   summarise(across(c(var3, var4), ~ sum(.)), .groups = "drop")
 
 # 모든 숫자형 변수의 평균값을 계산
-df %>% summarise(across(where(is.numeric), mean)))
+df %>% summarise(across(where(is.numeric), mean))
 
-# 숫자형 변수의 평균을, 범주형 변수의 level의 개수를 구해 보자.
+# 숫자형 변수의 평균을, 범주형 변수의 level의 개수
 df %>% summarise(across(where(is.numeric), mean),
                  across(where(is.factor), nlevels))
 
-# 이름이 Num으로 시작하는 변수의 평균과 표준편차를 구해 보자.
-df %>% summarise(across(starts_with("Num"), list(M=mean, SD=sd)))
+# 이름이 Num으로 시작하는 변수의 평균과 표준편차 산정
+df %>% summarise(across(starts_with("Num"), list(M = mean, SD = sd)))
 
-# 각 숫자형 변수의 결측값의 개수를 세어 보자.
+# 각 숫자형 변수의 결측값의 개수
 df %>% summarise(across(where(is.numeric), ~ sum(is.na(.x))))
 
-# 모든 숫자형 변수에 대해 중복되지 않는 값의 개수를 세어 보자.
+# 모든 숫자형 변수에 대해 중복되지 않는 값의 개수
 df %>% summarise(across(where(is.numeric), ~ length(unique(.x))))
 
 # 특정 열만 지정
@@ -278,7 +278,7 @@ df %>% filter(.fns = !is.na(.x))
 
 ### 6. 행 단위 작업 ------------------------------------------------------------
 ### rowwise() -----
-df1 = tibble(x=1:2, y=3:4, z=5:6)
+df1 = tibble(x = 1:2, y = 3:4, z = 5:6)
 # A tibble: 2 x 3
 #       x     y     z
 #   <int> <int> <int>
@@ -286,7 +286,7 @@ df1 = tibble(x=1:2, y=3:4, z=5:6)
 # 2     2     4     6
 
 ## 각 행의 합 계산
-df1 %>% rowwise() %>% mutate(total=sum(c(x, y, z)))
+df1 %>% rowwise() %>% mutate(total = sum(c(x, y, z)))
 # A tibble: 2 x 4
 # Rowwise: 
 #       x     y     z total
@@ -295,7 +295,7 @@ df1 %>% rowwise() %>% mutate(total=sum(c(x, y, z)))
 # 2     2     4     6    12
 
 ## rowwise() 없이 실행하면 모든 변수의 합이 계산
-df1 %>% mutate(total=sum(c(x, y, z)))
+df1 %>% mutate(total = sum(c(x, y, z)))
 # A tibble: 2 x 4
 #       x     y     z total
 #   <int> <int> <int> <int>
@@ -329,10 +329,10 @@ df %>%
 # names_sep 인자에 .(dot) 을 기준으로 분할
 # .(dot)을 인식시키기 위해서 앞에 \\ 을 입력함
 # names_to 인자에 분할될 변수명을 정함
-pivot_longer(data=iris,
-             cols=Sepal.Length:Petal.Width,
-             names_to=c("name","name1"),
-             names_sep='\\.')
+pivot_longer(data = iris,
+             cols = Sepal.Length:Petal.Width,
+             names_to = c("name","name1"),
+             names_sep = '\\.')
 
 
 ### pivot_wider() : 데이터를 wide format 으로 변경 -----------------------------
@@ -378,6 +378,12 @@ df %>% mutate_all(~replace(., is.na(.), 0))
 
 ### 특정열 결측치 0으로 변경
 df %>% mutate(across(c(var1, var2), ~replace(., is.na(.), 0)))
+
+
+
+#=========== * 텍스트 관련 * ===================================================
+
+
 
 
 
