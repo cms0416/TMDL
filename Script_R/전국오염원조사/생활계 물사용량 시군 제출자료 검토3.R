@@ -24,7 +24,7 @@ dongcode <- read_excel("주소 검토/법정동코드 전체자료.xlsx", guess_
   filter(!is.na(동리))
 
 ### 도로명코드 불러오기
-dorocode <- read.table("주소 검토/주소DB/도로명코드.txt",
+dorocode <- read.table("주소 검토/주소DB/개선_도로명코드_전체분.txt",
   header = F, quote = "", sep = "|", fill = T,
   encoding = "UTF-8", fileEncoding = "EUC-KR"
 ) %>%
@@ -584,8 +584,11 @@ addr_test <- waterusage %>% select(-c(연도, 하수도요금여부)) %>%
     지번주소 =
       str_c(
         "강원도", " ", 시군, " ",
-        ifelse(is.na(읍면), "", str_c(읍면, " ")),
-        ifelse(is.na(동리), "", str_c(동리, " ")),
+        case_when(
+          str_sub(동리, -1) == "동" | str_sub(동리, -1) == "가" ~ "",
+          str_sub(동리, -1) == "리" ~ str_c(읍면, " ")
+        ),
+        동리, " ",
         ifelse(is.na(산), "", str_c(산, " ")),
         본번,
         ifelse(부번 == 0 | is.na(부번), "", str_c("-", 부번))
@@ -623,6 +626,7 @@ addr_test1 <- addr_test %>%
 
 
 
+#_______________________________________________________________________________
 
 ### 주소코드 합치기
 addr_test1 <- addr_test %>%
@@ -695,7 +699,7 @@ KAKAO_MAP_API_KEY <- "9e9a85a9ec8362e009da2f7bc4b3a09c"
 address_doro <- addr_test1 %>%
   # filter(!(시군 %in% c("강릉시", "고성군", "삼척시"))) %>%
   # filter(도로명주소추가확인 == "Y") %>%
-  select(코드, 도로명주소, 사용량합계) %>%
+  select(코드, 도로명주소) %>%
   filter(!is.na(도로명주소)) %>%
   rowid_to_column(var = "ID")
 
@@ -758,9 +762,9 @@ for (i in 1:nrow(address_doro)) {
 address_jibun <- addr_test1 %>%
   # filter(!(시군 %in% c("강릉시", "고성군", "삼척시"))) %>%
   # filter(지번주소추가확인 == "Y") %>%
-  select(코드, 지번주소, 사용량합계) %>%
+  select(코드, 지번주소) %>%
   filter(!is.na(지번주소)) %>%
-  rowid_to_column(var = "ID") 
+  rowid_to_column(var = "ID") # %>% filter(ID > 105)
 
 address_jibun_list <- address_jibun$지번주소
 
@@ -786,8 +790,18 @@ for (i in 1:nrow(address_jibun)) {
   # 수용가번호 및 기존 주소 불러오기
   temp_addr_jibun <- address_jibun %>% filter(ID == i)
   
+  temp <- bind_cols(place_list$documents$road_address, tibble(test = NA))
+  
   ## 지번주소
-  temp_jibun <- bind_cols(temp_addr_jibun, place_list$documents$address)
+  # temp_jibun <- bind_cols(temp_addr_jibun, place_list$documents$address)
+  # place_list$documents$road_address$address_name
+  
+  if (is.na(temp[1, 1])) {
+    temp_jibun <- bind_cols(temp_addr_jibun, place_list$documents$address)
+  } else {
+    temp_jibun <- bind_cols(temp_addr_jibun, place_list$documents$address, 
+                            place_list$documents$road_address$address_name)
+  }
   
   result_jibun <- bind_rows(result_jibun, temp_jibun)
   
