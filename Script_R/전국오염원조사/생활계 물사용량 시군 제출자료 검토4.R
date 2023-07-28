@@ -259,6 +259,8 @@ waterusage <- rbind(
 addr_test <- waterusage %>% select(-c(연도, 하수도요금여부)) %>%
   # filter(시군 == "철원군") %>%
   mutate(
+    # 시군, 수용가번호 합쳐서 코드 생성(시군별 수용가번호 동일한 경우 방지)
+    코드 = str_c(시군, 수용가번호, 구분, 업종),
     주소1수정 =
     # '00번길' 또는 '00길'앞에 띄어쓰기가 되어 있는 경우 공백 제거
       str_replace(주소1, " 번길", "번길") %>%
@@ -367,14 +369,15 @@ addr_test <- waterusage %>% select(-c(연도, 하수도요금여부)) %>%
     도로명 = ifelse(is.na(도로명1) | 도로명1 == "", 도로명2, 도로명1),
     건물본번 = ifelse(is.na(건물본번1) | 건물본번1 == "", 건물본번2, 건물본번1),
     건물부번 = ifelse(is.na(건물부번1) | 건물부번1 == "", 건물부번2, 건물부번1),
-    
+
     # 본번/부번 앞에 0이 있는 경우 제거
-    본번 = ifelse(str_sub(본번, 1, 1)  == 0, str_replace(본번, "0", ""), 본번),
-    부번 = ifelse(str_sub(부번, 1, 1)  == 0, str_replace(부번, "0", ""), 부번),
-    건물본번 = ifelse(str_sub(건물본번, 1, 1)  == 0, str_replace(건물본번, "0", ""), 건물본번),
-    건물부번 = ifelse(str_sub(건물부번, 1, 1)  == 0, str_replace(건물부번, "0", ""), 건물부번),
-    across(c(본번, 부번, 건물본번, 건물부번), ~replace(., . == "", NA)),
-     
+    본번 = ifelse(str_sub(본번, 1, 1) == 0, str_replace(본번, "0", ""), 본번),
+    부번 = ifelse(str_sub(부번, 1, 1) == 0, str_replace(부번, "0", ""), 부번),
+    건물본번 = ifelse(str_sub(건물본번, 1, 1) == 0, str_replace(건물본번, "0", ""), 건물본번),
+    건물부번 = ifelse(str_sub(건물부번, 1, 1) == 0, str_replace(건물부번, "0", ""), 건물부번),
+    across(c(본번, 부번, 건물본번, 건물부번), ~ replace(., . == "", NA)),
+    across(c(본번, 부번, 건물본번, 건물부번), as.numeric),
+
     # 주소 합치기
     도로명주소 =
       str_c(
@@ -401,9 +404,7 @@ addr_test <- waterusage %>% select(-c(연도, 하수도요금여부)) %>%
         ifelse(부번 == 0 | is.na(부번), "", str_c("-", 부번))
       ),
     동리확인 = ifelse(is.na(동리), "X", ""),
-    주소확인 = ifelse(is.na(동리) & is.na(도로명주소) & is.na(지번주소), "X", ""),
-    # 시군, 수용가번호 합쳐서 코드 생성(시군별 수용가번호 동일한 경우 방지)
-    코드 = str_c(시군, 수용가번호, 구분)
+    주소확인 = ifelse(is.na(동리) & is.na(도로명주소) & is.na(지번주소), "X", "")
   )
 
 ### 주소 확인
@@ -418,19 +419,80 @@ addr_test1 <- addr_test %>%
     지번주소확인 = ifelse(is.na(지번주소), "N", 지번주소확인)
   ) %>%
   select(-c(주소1수정:건물부번2), -읍면동, -리, -동리확인, -주소확인) %>%
+  # mutate(
+  #   도로명주소추가확인 = case_when(
+  #     도로명주소확인 == "X" & 지번주소확인 == "X" ~ "Y",
+  #     도로명주소확인 == "X" & 지번주소확인 == "N" ~ "Y",
+  #     TRUE ~ "N"
+  #   ),
+  #   지번주소추가확인 = case_when(
+  #     도로명주소확인 == "X" & 지번주소확인 == "X" ~ "Y",
+  #     도로명주소확인 == "N" & 지번주소확인 == "X" ~ "Y",
+  #     TRUE ~ "N"
+  #   )
+  # ) %>%
+  # 도로명 주소 기준 확인
+  left_join(
+    도로명주소 %>%
+      filter(지하여부 == 0) %>%
+      select(시군, 도로명, 건물본번, 건물부번,
+        도로명주소DB_도로명주소 = 도로명주소,
+        도로명주소DB_지번주소 = 지번주소
+      ),
+    by = c("시군", "도로명", "건물본번", "건물부번")
+  ) %>%
+  left_join(
+    지번주소 %>%
+      select(시군:부번,
+        지번주소DB_도로명주소 = 도로명주소,
+        지번주소DB_지번주소 = 지번주소
+      ),
+    by = c("시군", "읍면", "동리", "산", "본번", "부번")
+  ) %>%
   mutate(
-    도로명주소추가확인 = case_when(
-      도로명주소확인 == "X" & 지번주소확인 == "X" ~ "Y",
-      도로명주소확인 == "X" & 지번주소확인 == "N" ~ "Y",
-      TRUE ~ "N"
-    ),
-    지번주소추가확인 = case_when(
-      도로명주소확인 == "X" & 지번주소확인 == "X" ~ "Y",
-      도로명주소확인 == "N" & 지번주소확인 == "X" ~ "Y",
-      TRUE ~ "N"
-    )
+    도로명주소DB_도로명주소 = ifelse(도로명주소DB_도로명주소 == 도로명주소, NA, 도로명주소DB_도로명주소),
+    도로명주소DB_지번주소 = ifelse(도로명주소DB_지번주소 == 지번주소, NA, 도로명주소DB_지번주소),
+    지번주소DB_도로명주소 = ifelse(지번주소DB_도로명주소 == 도로명주소, NA, 지번주소DB_도로명주소),
+    지번주소DB_지번주소 = ifelse(지번주소DB_지번주소 == 지번주소, NA, 지번주소DB_지번주소)
   )
+group_by(코드) %>% mutate(중복 = length(코드))
 
+
+### 주소DB자료와 비교 확인
+addr_test2 <- addr_test %>%
+  # 읍면을 제외한 나머지 도로명 주소를 이용하여 주소DB자료 결합(읍면 틀린 경우 확인)
+  left_join(
+    도로명주소 %>%
+      filter(지하여부 == 0) %>%
+      select(시군, 도로명, 건물본번, 건물부번,
+        도로명주소_DB = 도로명주소,
+        도로명주소기준_지번주소 = 지번주소
+      ),
+    by = c("시군", "도로명", "건물본번", "건물부번")
+  ) %>%
+  # 도로명주소확인
+  mutate(도로명주소확인 = case_when(
+    is.na(도로명주소_DB) ~ "N",        # 제출 자료가 없는 경우 N
+    도로명주소_DB == 도로명주소 ~ "O", # 제출자료와 주소DB자료가 일치하는 경우 O
+    도로명주소_DB != 도로명주소 ~ "X"  # 제출자료와 주소DB자료가 불일치하는 경우 X
+  )) %>%
+  # 지번주소확인 : 제출자료와 주소DB자료가 일치하는 경우 O
+  left_join(지번주소 %>% select(지번주소, 지번주소확인, 
+                            지번주소기준_도로명주소 = 도로명주소), 
+            by = "지번주소") %>% 
+  # 지번주소확인 : 제출자료 없거나 주소DB와 불일치하는 경우 확인
+  mutate(지번주소확인 = case_when(
+    is.na(지번주소) ~ "N",                         # 제출 자료가 없는 경우 N
+    !is.na(지번주소) & is.na(지번주소확인) ~ "X",  # 제출자료와 주소DB자료가 불일치하는 경우 X
+    TRUE ~ 지번주소확인                            # 나머지 자료는 주소DB와 일치
+  ), 
+  # 지번주소 추가 확인 : 도로명주소기준 지번주소와 제출자료 일치 여부 확인
+  지번주소확인2 = ifelse(지번주소 != 도로명주소기준_지번주소, "X", "O")) %>%
+  select(-c(주소1수정:건물부번2), -읍면동, -리, -동리확인, -주소확인) %>%
+  relocate(c(도로명주소확인, 지번주소확인), .after = 지번주소) %>% 
+  group_by(코드) %>%
+  mutate(중복 = length(코드)) %>%
+  ungroup()
 
 
 
@@ -535,25 +597,27 @@ for (i in 1:nrow(address_jibun)) {
   ) %>%
     content(as = "text") %>%
     fromJSON()
-  
+
   # 수용가번호 및 기존 주소 불러오기
   temp_addr_jibun <- address_jibun %>% filter(ID == i)
-  
+
   temp <- bind_cols(place_list$documents$road_address, tibble(test = NA))
-  
+
   ## 지번주소
   # temp_jibun <- bind_cols(temp_addr_jibun, place_list$documents$address)
   # place_list$documents$road_address$address_name
-  
+
   if (is.na(temp[1, 1])) {
     temp_jibun <- bind_cols(temp_addr_jibun, place_list$documents$address)
   } else {
-    temp_jibun <- bind_cols(temp_addr_jibun, place_list$documents$address, 
-                            place_list$documents$road_address$address_name)
+    temp_jibun <- bind_cols(
+      temp_addr_jibun, place_list$documents$address,
+      place_list$documents$road_address$address_name
+    )
   }
-  
+
   result_jibun <- bind_rows(result_jibun, temp_jibun)
-  
+
   ## 진행상황 확인
   pb_jibun$tick()
 }
@@ -562,30 +626,36 @@ for (i in 1:nrow(address_jibun)) {
 ## ------ 검색 결과 정리 -------------------------------------------------------
 ## 도로명 주소
 result_doro2 <- result_doro %>%
-  select(코드, 도로명주소, address_name, region_3depth_name) %>% 
-  filter(!is.na(address_name)) %>% 
-  mutate(address_name = str_replace(address_name, "강원특별자치도", "강원도"), 
-         확인 = ifelse(도로명주소 != address_name, "X", "O")
-         )
+  select(코드, 도로명주소, address_name, region_3depth_name) %>%
+  filter(!is.na(address_name)) %>%
+  mutate(
+    address_name = str_replace(address_name, "강원특별자치도", "강원도"),
+    확인 = ifelse(도로명주소 != address_name, "X", "O")
+  )
 
 ## 지번 주소
 result_jibun2 <- result_jibun %>%
-  mutate(지번검색결과 = ifelse(is.na(address_name), "X", "O")) %>% 
-  select(코드, 지번주소, 지번검색결과)
+  select(코드, 지번주소, address_name, region_3depth_h_name, region_3depth_name) %>%
+  filter(!is.na(address_name)) %>%
+  mutate(
+    address_name = str_replace(address_name, "강원특별자치도", "강원도"),
+    확인 = ifelse(지번주소 != address_name, "X", "O"),
+    행정동정리 = ifelse(str_detect(region_3depth_name, region_3depth_h_name), "O", "X")
+  )
 
-
-addr_test2 <- addr_test1 %>% 
-  left_join(result_doro2, by = c("코드", "도로명주소")) %>% 
-  left_join(result_jibun2, by = c("코드", "지번주소")) %>% 
-  mutate(도로명주소확인 = ifelse(is.na(도로명검색결과), 도로명주소확인, 도로명검색결과),
-         지번주소확인 = ifelse(is.na(지번검색결과), 지번주소확인, 지번검색결과), 
-         주소확인 = case_when(
-           도로명주소확인 == "O" & 지번주소확인 == "O" ~ "OK",
-           도로명주소확인 == "O" | 지번주소확인 == "O" ~ "OK",
-           TRUE ~ "주소 수정 필요"
-           )
-         ) %>% 
-  select(-c(업종:사용량합계), -코드, -c(도로명주소추가확인:지번검색결과)) %>% 
+addr_test2 <- addr_test1 %>%
+  left_join(result_doro2, by = c("코드", "도로명주소")) %>%
+  left_join(result_jibun2, by = c("코드", "지번주소")) %>%
+  mutate(
+    도로명주소확인 = ifelse(is.na(도로명검색결과), 도로명주소확인, 도로명검색결과),
+    지번주소확인 = ifelse(is.na(지번검색결과), 지번주소확인, 지번검색결과),
+    주소확인 = case_when(
+      도로명주소확인 == "O" & 지번주소확인 == "O" ~ "OK",
+      도로명주소확인 == "O" | 지번주소확인 == "O" ~ "OK",
+      TRUE ~ "주소 수정 필요"
+    )
+  ) %>%
+  select(-c(업종:사용량합계), -코드, -c(도로명주소추가확인:지번검색결과)) %>%
   relocate(c(구분, 수용가명, 상호명), .after = 수용가번호)
 
 
@@ -614,7 +684,3 @@ write_xlsx(list("동리" = waterusage_2022, "시군" = waterusage_2022_시군),
 )
 
 write_xlsx(waterusage_2022_시군, path = "전국오염원조사/waterusage_2022_시군.xlsx")
-
-
-
-
