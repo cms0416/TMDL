@@ -1,6 +1,8 @@
 #  라이브러리 로드
 library(tidyverse)
 library(magrittr)
+library(readxl)
+library(writexl)
 
 # ========== ▶ 파일 불러오기 ◀ =================================================
 # └ read_excel : 엑셀파일 불러오기 ---------------------------------------------
@@ -46,6 +48,36 @@ df <- read.table("AAA/BBB/data.txt",
                  header = F, quote = "", sep = "|", fill = T,
                  encoding = "UTF-8", fileEncoding = "EUC-KR"
 )
+
+
+# ========== ▶ 파일 내보내기 ◀ =================================================
+# └ write.csv : csv 파일 내보내기 ----------------------------------------------
+write.csv(df, "AAA/BBB/Output/df.csv")
+write_xlsx(df, path = "AAA/BBB/Output/df.csv")  # write_xlsx도 csv 내보내기 가능
+
+# └ write_xlsx : 엑셀파일 내보내기 ---------------------------------------------
+write_xlsx(df, path = "AAA/BBB/Output/df.xlsx")
+
+## 여러 데이터프레임을 시트로 나눠서 엑셀파일 하나로 내보내기 1
+write_xlsx(list(
+  "aaa" = df1,
+  "bbb" = df2 %>% filter(var1 != "x"),
+  "ccc" = df3
+), path = "AAA/BBB/Output/df.xlsx")
+
+
+## 여러 데이터프레임을 시트로 나눠서 엑셀파일 하나로 내보내기 2
+sheets <- list(
+  "aaa" = df1,
+  "bbb" = df2 %>% filter(var1 != "x"),
+  "ccc" = df3,
+  "aaa2" = df4,
+  "bbb2" = df5 %>% filter(var1 != "x"),
+  "ccc2" = df6
+)
+
+write_xlsx(sheets, path = "AAA/BBB/Output/df.xlsx")
+
 
 
 # ========== ▶ dplyr_데이터 변환 ◀ =============================================
@@ -152,15 +184,20 @@ names(df) <- c("x4", "x2", "x5")
 
 
 # └ 2.3 relocate() : 열의 위치 변경 --------------------------------------------
-df %>% relocate(var5)                            # var5를 맨 앞으로
-df %>% relocate(starts_with("a"), .after = var2) # 이름에 a가 포함되는 변수를 var2 뒤로 이동
+df %>% relocate(var5)                             # var5를 맨 앞으로 이동
+df %>% relocate(var5, .after = var2)              # var5를 var2 뒤로 이동
+df %>% relocate(var5, .before = var3)             # var5를 var3 앞으로 이동
+df %>% relocate(starts_with("a"), .after = var2)  # 이름에 a가 포함되는 변수를 var2 뒤로 이동
 
 
 # └ 2.4 mutate(), transmute() : 열 추가 ----------------------------------------
 # mutate()를 사용하면 데이터프레임에 변수가 추가되어 반환되고, 
 # transmute()를 사용하면 추가한 변수만 얻을 수 있다.
 # ++ mutate() -----
-df %>% mutate(speed=dist/time) %>% relocate(speed) # speed를 계산하고 맨 앞으로 옮김
+df %>% mutate(z = x + y)
+df %>% mutate(z = x + y, .before = 1)  # 계산 결과 z열을 맨 앞열에 추가
+df %>% mutate(z = x + y, .after = x)   # 계산 결과 z열을 X 뒷열에 추가
+df %>% mutate(speed = dist / time) %>% relocate(speed) # speed를 계산하고 맨 앞으로 옮김
 
 # 참고
 # ++ if_else() -----
@@ -529,4 +566,18 @@ df %>% rowid_to_column(var = "ID")
 options(scipen=999)  # 지수 표기에서 숫자 표기로 변경경
 options(scipen=0)    # 다시 기본설정으로 변경
 
-
+# └ 시군, 단위유역 순서 별 정렬 -----
+df %>%
+  mutate(
+    단위유역 = factor(단위유역, levels = c(
+      "합계", "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A",
+      "섬강A", "섬강B", "북한A", "북한B", "소양A", "인북A", "소양B", "북한C",
+      "홍천A", "한탄A", "한강B", "제천A", "한강D", "북한D", "한탄B", "임진A",
+      "낙본A", "기타"
+    )),
+    시군 = factor(시군, levels = c(
+      "합계", "춘천시", "원주시", "강릉시", "태백시", "삼척시", "홍천군",
+      "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군",
+      "양구군", "인제군", "고성군", "동해시", "속초시", "양양군"
+    ))) %>% 
+  arrange(단위유역, 시군)

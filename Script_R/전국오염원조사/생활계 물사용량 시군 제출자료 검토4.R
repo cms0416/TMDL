@@ -8,6 +8,8 @@ library(writexl)
 ### 반올림 사용자 정의 함수 로드
 source("Script_R/Function/round2func.R")
 
+### 주소DB 관련 자료 로드
+source("Script_R/주소 검토/주소DB 정리2.R")
 
 
 ##########  당해 연도 자료(2022년) 정리  #############################################
@@ -255,7 +257,7 @@ waterusage <- rbind(
 ##########  주소 정리  ##############################################################
 
 
-### 주소검토
+### 주소검토  -----
 addr_test <- waterusage %>% select(-c(연도, 하수도요금여부)) %>%
   # filter(시군 == "철원군") %>%
   mutate(
@@ -328,13 +330,13 @@ addr_test <- waterusage %>% select(-c(연도, 하수도요금여부)) %>%
     도로명1 = ifelse(str_detect(도로명_check, str_c(" ", 도로명1, " ")), 도로명1, NA),
     도로명2 = ifelse(str_detect(도로명_check, str_c(" ", 도로명2, " ")), 도로명2, NA),
     # 본번/부번
-    산1 = str_extract(주소1수정, "(?<=동 |리 |가 )(산)"),
-    본번1 = str_extract(주소1수정, "(?<=동 |동|리 |리|가 |가|산 |산)[0-9]{1,}(?!로 |길 )"),
-    부번1 = str_extract(주소1수정, "(?<=동 |동|리 |리|가 |가|산 |산)[0-9\\-]{1,}") %>%
+    산1 = str_extract(주소1수정, "(?<=동|리|가)[:blank:]*(산)") %>% str_trim(),
+    본번1 = str_extract(주소1수정, "(?<=동|리|가|산)([:blank:]*[0-9]{1,})(?!로 |길 )"),
+    부번1 = str_extract(주소1수정, "(?<=동|리|가|산)([:blank:]*[0-9\\-]{1,})") %>%
       str_extract(., "(?<=\\-)[0-9]{1,}"),
-    산2 = str_extract(주소2수정, "(?<=동 |리 |가 )(산)"),
-    본번2 = str_extract(주소2수정, "(?<=동 |동|리 |리|가 |가|산 |산)[0-9]{1,}(?!로 |길 )"),
-    부번2 = str_extract(주소2수정, "(?<=동 |동|리 |리|가 |가|산 |산)[0-9\\-]{1,}") %>%
+    산2 = str_extract(주소2수정, "(?<=동|리|가)[:blank:]*(산)") %>% str_trim(),
+    본번2 = str_extract(주소2수정, "(?<=동|리|가|산)([:blank:]*[0-9]{1,})(?!로 |길 )"),
+    부번2 = str_extract(주소2수정, "(?<=동|리|가|산)([:blank:]*[0-9\\-]{1,})") %>%
       str_extract(., "(?<=\\-)[0-9]{1,}"),
     건물본번1 = ifelse(is.na(도로명1), NA,
       주소1수정 %>%
@@ -399,7 +401,7 @@ addr_test <- waterusage %>% select(-c(연도, 하수도요금여부)) %>%
           str_sub(동리, -1) == "리" ~ str_c(읍면, " ")
         ),
         동리, " ",
-        ifelse(is.na(산), "", str_c(산, " ")),
+        ifelse(is.na(산), "", str_c("산", " ")),
         본번,
         ifelse(부번 == 0 | is.na(부번), "", str_c("-", 부번))
       ),
@@ -407,7 +409,7 @@ addr_test <- waterusage %>% select(-c(연도, 하수도요금여부)) %>%
     주소확인 = ifelse(is.na(동리) & is.na(도로명주소) & is.na(지번주소), "X", "")
   )
 
-### 주소 확인
+### 주소 확인  -----
 addr_test1 <- addr_test %>%
   # 도로명 주소 기준 확인
   left_join(도로명주소 %>% select(도로명주소, 도로명주소확인), by = "도로명주소") %>%
@@ -455,10 +457,10 @@ addr_test1 <- addr_test %>%
     지번주소DB_도로명주소 = ifelse(지번주소DB_도로명주소 == 도로명주소, NA, 지번주소DB_도로명주소),
     지번주소DB_지번주소 = ifelse(지번주소DB_지번주소 == 지번주소, NA, 지번주소DB_지번주소)
   )
-group_by(코드) %>% mutate(중복 = length(코드))
+# group_by(코드) %>% mutate(중복 = length(코드))
 
 
-### 주소DB자료와 비교 확인
+### 주소DB자료와 비교 확인  -----
 addr_test2 <- addr_test %>%
   # 읍면을 제외한 나머지 도로명 주소를 이용하여 주소DB자료 결합(읍면 틀린 경우 확인)
   left_join(
@@ -472,27 +474,93 @@ addr_test2 <- addr_test %>%
   ) %>%
   # 도로명주소확인
   mutate(도로명주소확인 = case_when(
-    is.na(도로명주소_DB) ~ "N",        # 제출 자료가 없는 경우 N
-    도로명주소_DB == 도로명주소 ~ "O", # 제출자료와 주소DB자료가 일치하는 경우 O
-    도로명주소_DB != 도로명주소 ~ "X"  # 제출자료와 주소DB자료가 불일치하는 경우 X
+    is.na(도로명) & is.na(도로명주소) ~ "미기재",  # 제출 자료가 없는 경우 N
+    !is.na(도로명) & is.na(도로명주소) ~ "X", # 도로명은 있으나 도로명 주소가 생성이 안된경우 X
+    is.na(도로명주소_DB) ~ "X",        # 도로명주소_DB에서 검색이 안되는 경우 X
+    도로명주소_DB != 도로명주소 ~ "X", # 제출자료와 주소DB자료가 불일치하는 경우 X
+    도로명주소_DB == 도로명주소 ~ "O"  # 제출자료와 주소DB자료가 일치하는 경우 O
   )) %>%
   # 지번주소확인 : 제출자료와 주소DB자료가 일치하는 경우 O
-  left_join(지번주소 %>% select(지번주소, 지번주소확인, 
-                            지번주소기준_도로명주소 = 도로명주소), 
-            by = "지번주소") %>% 
+  left_join(
+    지번주소 %>% select(지번주소, 지번주소확인,
+      지번주소기준_도로명주소 = 도로명주소
+    ),
+    by = "지번주소"
+  ) %>%
   # 지번주소확인 : 제출자료 없거나 주소DB와 불일치하는 경우 확인
   mutate(지번주소확인 = case_when(
-    is.na(지번주소) ~ "N",                         # 제출 자료가 없는 경우 N
-    !is.na(지번주소) & is.na(지번주소확인) ~ "X",  # 제출자료와 주소DB자료가 불일치하는 경우 X
-    TRUE ~ 지번주소확인                            # 나머지 자료는 주소DB와 일치
-  ), 
+    is.na(지번주소) ~ "미기재", # 제출 자료가 없는 경우 N
+    !is.na(동리) & is.na(지번주소) ~ "X", # 동리는 있으나 도로명 주소가 생성이 안된경우 X
+    !is.na(지번주소) & is.na(지번주소확인) ~ "X", # 제출자료와 주소DB자료가 불일치하는 경우 X
+    TRUE ~ 지번주소확인 # 나머지 자료는 주소DB와 일치
+  )) %>%
   # 지번주소 추가 확인 : 도로명주소기준 지번주소와 제출자료 일치 여부 확인
-  지번주소확인2 = ifelse(지번주소 != 도로명주소기준_지번주소, "X", "O")) %>%
-  select(-c(주소1수정:건물부번2), -읍면동, -리, -동리확인, -주소확인) %>%
-  relocate(c(도로명주소확인, 지번주소확인), .after = 지번주소) %>% 
+  # 지번주소확인2 = ifelse(지번주소 != 도로명주소기준_지번주소, "X", "O")) %>%
   group_by(코드) %>%
   mutate(중복 = length(코드)) %>%
-  ungroup()
+  ungroup() %>%
+  select(-c(가구수:건물부번2), -읍면동, -리, -동리확인, -주소확인) %>%
+  relocate(c(도로명주소확인, 지번주소확인), .after = 지번주소)
+
+
+## 시군별 자료 개수 확인  -----
+시군별주소확인개수 <- addr_test2 %>%
+  group_by(시군) %>%
+  summarise(총개수 = n(), .groups = "drop") %>%
+  left_join(
+    addr_test2 %>%
+      filter(도로명주소확인 != "미기재") %>%
+      group_by(시군) %>%
+      summarise(도로명주소_총개수 = n(), .groups = "drop"),
+    by = "시군"
+  ) %>%
+  left_join(
+    addr_test2 %>%
+      filter(도로명주소확인 == "X") %>%
+      group_by(시군) %>%
+      summarise(도로명주소_오류개수 = n(), .groups = "drop"),
+    by = "시군"
+  ) %>%
+  left_join(
+    addr_test2 %>%
+      filter(지번주소확인 != "미기재") %>%
+      group_by(시군) %>%
+      summarise(지번주소_총개수 = n(), .groups = "drop"),
+    by = "시군"
+  ) %>% 
+  left_join(
+    addr_test2 %>%
+      filter(지번주소확인 == "X") %>%
+      group_by(시군) %>%
+      summarise(지번주소_오류개수 = n(), .groups = "drop"),
+    by = "시군"
+  )
+
+시군별주소확인개수 %<>%
+  bind_rows(시군별주소확인개수 %>%
+    summarise(
+      총개수 = sum(총개수),
+      도로명주소_총개수 = sum(도로명주소_총개수),
+      도로명주소_오류개수 = sum(도로명주소_오류개수),
+      지번주소_총개수 = sum(지번주소_총개수),
+      지번주소_오류개수 = sum(지번주소_오류개수)
+    ) %>%
+    mutate(시군 = "합계", .before = 1)) %>% 
+  mutate(도로명주소_오류율 = round(도로명주소_오류개수 / 도로명주소_총개수, 4),
+         .after = 도로명주소_오류개수) %>% 
+  mutate(지번주소_오류율 = round(지번주소_오류개수 / 지번주소_총개수, 4),
+         .after = 지번주소_오류개수) %>%
+  mutate(
+    시군 = factor(시군, levels = c(
+      "합계", "춘천시", "원주시", "강릉시", "태백시", "삼척시", "홍천군",
+      "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군",
+      "양구군", "인제군", "고성군", "동해시", "속초시", "양양군"
+    ))) %>% 
+  arrange(시군)
+
+
+### 파일 내보내기  -----
+write_xlsx(addr_test2, path = "전국오염원조사/Output/addr_test2.csv")
 
 
 
@@ -680,7 +748,7 @@ waterusage_2022_시군 <- waterusage_2022 %>%
 
 ### 파일 내보내기
 write_xlsx(list("동리" = waterusage_2022, "시군" = waterusage_2022_시군),
-  path = "전국오염원조사/waterusage_2022.xlsx"
+  path = "전국오염원조사/Output/waterusage_2022.xlsx"
 )
 
-write_xlsx(waterusage_2022_시군, path = "전국오염원조사/waterusage_2022_시군.xlsx")
+write_xlsx(waterusage_2022_시군, path = "전국오염원조사/Output/waterusage_2022_시군.xlsx")
