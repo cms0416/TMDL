@@ -12,12 +12,13 @@
 ### 라이브러리 로드
 library(tidyverse)
 library(data.table)
+library(readxl)
+library(writexl)
+
 library(RSelenium)
 library(seleniumPipes)
 library(rvest)
 library(httr)
-library(readxl)
-library(writexl)
 ################################################################################
 
 
