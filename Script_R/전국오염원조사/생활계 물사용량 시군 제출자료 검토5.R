@@ -592,7 +592,7 @@ addr_test2 <- addr_test %>%
 
 
 ### 파일 내보내기  -----
-write_xlsx(addr_test2, path = "전국오염원조사/Output/addr_test2.csv")
+write_xlsx(addr_test2, path = "전국오염원조사/Output/addr_test2.xlsx")
 
 
 

@@ -4,7 +4,7 @@
 # selenium 실행 : 윈도우에서 cmd를 통해 명령 프롬프트를 연 후, 아래 명령어를 입력(cmd창은 계속 열어둔다.)
 #
 # cd C:\Rselenium
-# java -Dwebdriver.gecko.driver="geckodriver.exe" -jar selenium-server-standalone-4.0.0-alpha-2.jar -port 4445
+# java -Dwebdriver.gecko.driver="geckodriver.exe" -jar selenium-server-standalone-4.0.0-alpha-2.jar -port 4567
 #
 ###############################################################################################################
 
@@ -29,7 +29,7 @@ hantan <- read_excel("수질 분석/총량측정망_한탄A_0720.xlsx")
 ## 4445번 포트와 크롬 연결
 remDr <- remoteDriver(
   remoteServerAddr = "localhost",
-  port = 4445L,
+  port = 4567L,
   browserName = "chrome"
 )
 
