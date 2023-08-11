@@ -119,5 +119,6 @@ library(magrittr)
 
 ### 읍면, 동리, 도로명 확인용 벡터 생성(제일 앞에 여백 추가)
 읍면_check <- paste(" ", 법정동코드$읍면, collapse = " ")
-동리_check <- paste(" ", 법정동코드$동리, collapse = " ")
+# 시군과 동리를 합친후 벡터로 변환(unlist() 함수 사용)
+동리_check <- paste(" ", unlist(법정동코드 %>% mutate(시군동리 = str_c(시군, 동리)) %>% select(시군동리)), collapse = " ")
 도로명_check <- paste(" ", 도로명코드$도로명, collapse = " ")
