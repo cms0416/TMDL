@@ -34,6 +34,7 @@ rD <- rsDriver(
 
 remDr <- rD$client
 
+remDr$close()
 remDr$open()
 
 ## 물환경정보시스템 총량측정망 자료조회 접속
