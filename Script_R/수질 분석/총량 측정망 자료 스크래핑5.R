@@ -23,17 +23,18 @@ hantan <- read_excel("수질 분석/총량측정망_한탄A_0720.xlsx")
 binman::list_versions('chromedriver')
 
 ## 크롬 브라우저
-wdman::chrome(port = 4567L)
+wdman::chrome(port = 4567L, version = '116.0.5845.96')
 
 ## 셀레니움 서버
 rD <- rsDriver(
   port = 4567L,
-  browser = 'chrome'
+  browser = 'chrome',
+  chromever = '116.0.5845.96'
 )
 
 remDr <- rD$client
 
-# remDr$open()
+remDr$open()
 
 ## 물환경정보시스템 총량측정망 자료조회 접속
 remDr$navigate("https://water.nier.go.kr/web/totalMeasure?pMENU_NO=567")
