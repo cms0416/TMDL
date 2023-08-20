@@ -8,6 +8,10 @@ library(writexl)
 library(RSelenium)
 library(rvest)
 library(httr)
+
+library(wdman)
+library(binman)
+library(webdriver)
 ################################################################################
 
 
@@ -29,6 +33,7 @@ rD <- rsDriver(
 
 remDr <- rD$client
 
+# remDr$open()
 
 ## 물환경정보시스템 총량측정망 자료조회 접속
 remDr$navigate("https://water.nier.go.kr/web/totalMeasure?pMENU_NO=567")
@@ -48,6 +53,8 @@ Sys.sleep(0.5)
 ## 한강수계 선택
 remDr$findElement(using = "xpath", value = "/html/body/div[3]/div[2]/form[1]/div[2]/div[3]/div[1]/div[1]/div[4]/div[1]/div[1]/ul[1]/li/button[2]")$clickElement()
 
+## 페이지 로딩 시간 대기
+Sys.sleep(0.5)
 
 ### ----- 낙본A --------------------------------------------------------------------
 ## 낙동강 수계 펼치기
@@ -59,6 +66,9 @@ Sys.sleep(0.5)
 ## 낙동강 펼치기
 remDr$findElement(using = "xpath", value = "/html/body/div[3]/div[2]/form[1]/div[2]/div[3]/div[1]/div[1]/div[4]/div[1]/div[1]/ul[2]/li/ul/li/button[1]")$clickElement()
 
+## 페이지 로딩 시간 대기
+Sys.sleep(0.5)
+
 ## 안동댐 펼치기
 remDr$findElement(using = "xpath", value = "/html/body/div[3]/div[2]/form[1]/div[2]/div[3]/div[1]/div[1]/div[4]/div[1]/div[1]/ul[2]/li/ul/li/ul[1]/li/button[1]")$clickElement()
 
@@ -69,9 +79,14 @@ Sys.sleep(0.5)
 remDr$findElement(using = "xpath", value = "/html/body/div[3]/div[2]/form[1]/div[2]/div[3]/div[1]/div[1]/div[4]/div[1]/div[1]/ul[2]/li/ul/li/ul[1]/li/ul/li[1]/button[1]")$clickElement()
 ### --------------------------------------------------------------------------------
 
+## 페이지 로딩 시간 대기
+Sys.sleep(0.5)
 
 ## 지점 선택 팝업창 닫기(확인 버튼 클릭)
 remDr$findElement(using = "xpath", value = "/html/body/div[3]/div[2]/form[1]/div[2]/div[3]/div[1]/div[1]/div[5]/a[1]")$clickElement()
+
+## 페이지 로딩 시간 대기
+Sys.sleep(1)
 
 ## 자료 조회 기간 월 설정(한번 설정 후 고정으로 반복문 제외)
 remDr$findElement(using = "xpath", value = '//*[@id="s_month"]/option[text() = "01"]')$clickElement() # 시작 월
