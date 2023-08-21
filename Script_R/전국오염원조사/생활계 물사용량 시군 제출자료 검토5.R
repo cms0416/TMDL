@@ -264,31 +264,36 @@ addr_test <- waterusage %>% select(-c(연도, 하수도요금여부)) %>%
     # 시군, 수용가번호 합쳐서 코드 생성(시군별 수용가번호 동일한 경우 방지)
     코드 = str_c(시군, 수용가번호, 구분, 업종),
     주소1수정 =
-    # '00번길' 또는 '00길'앞에 띄어쓰기가 되어 있는 경우 공백 제거
+      # '00번길' 또는 '00길'앞에 띄어쓰기가 되어 있는 경우 공백 제거
       str_replace(주소1, " 번길", "번길") %>%
-        str_replace(., "\\s\\d{1,}(번길)", str_extract(주소1, "\\d{1,}(번길)")) %>%
-        str_replace(., "\\s\\d{1,}(길)", str_extract(주소1, "\\d{1,}(길)")) %>%
-        # 동, 리 앞에 숫자가 있는 경우('XX1동', 'XX1리') 숫자 삭제
-        str_replace(., "\\d{1,}(동)", "동") %>%
-        str_replace(., "\\d{1,}(리)", "리") %>%
-        # '00반' 삭제
-        str_remove(., "\\d{1,}(반)") %>%
-        str_remove(., "강원도") %>%
-        str_remove(., 시군) %>%
-        str_trim(),
+      str_replace(., "\\s\\d{1,}(번길)", str_extract(주소1, "\\d{1,}(번길)")) %>%
+      str_replace(., "\\s\\d{1,}(길)", str_extract(주소1, "\\d{1,}(길)")) %>%
+      # 동, 리 앞에 숫자가 있는 경우('XX1동', 'XX1리') 숫자 삭제
+      str_replace(., "\\d{1,}(동)", "동") %>%
+      str_replace(., "\\d{1,}(리)", "리") %>%
+      # '00반' 삭제
+      str_remove(., "\\d{1,}(반)") %>%
+      # 도, 시군 삭제
+      str_remove(., "강원도") %>%
+      str_remove(., 시군) %>%
+      # '-0' 삭제('-01' 등 뒤에 숫자가 있는 경우는 예외)
+      str_remove(., "\\-0(?!\\d)") %>%
+      str_trim(),
     주소2수정 =
     # '00번길' 또는 '00길'앞에 띄어쓰기가 되어 있는 경우 공백 제거
       str_replace(주소2, " 번길", "번길") %>%
-        str_replace(., "\\s\\d{1,}(번길)", str_extract(주소2, "\\d{1,}(번길)")) %>%
-        str_replace(., "\\s\\d{1,}(길)", str_extract(주소2, "\\d{1,}(길)")) %>%
-        # 동, 리 앞에 숫자가 있는 경우('XX1동', 'XX1리') 숫자 삭제
-        str_replace(., "\\d{1,}(동)", "동") %>%
-        str_replace(., "\\d{1,}(리)", "리") %>%
-        # '00반' 삭제
-        str_remove(., "\\d{1,}(반)") %>%
-        str_remove(., "강원도") %>%
-        str_remove(., 시군) %>%
-        str_trim(),
+      str_replace(., "\\s\\d{1,}(번길)", str_extract(주소2, "\\d{1,}(번길)")) %>%
+      str_replace(., "\\s\\d{1,}(길)", str_extract(주소2, "\\d{1,}(길)")) %>%
+      # 동, 리 앞에 숫자가 있는 경우('XX1동', 'XX1리') 숫자 삭제
+      str_replace(., "\\d{1,}(동)", "동") %>%
+      str_replace(., "\\d{1,}(리)", "리") %>%
+      # '00반' 삭제
+      str_remove(., "\\d{1,}(반)") %>%
+      str_remove(., "강원도") %>%
+      str_remove(., 시군) %>%
+      # '-0' 삭제('-01' 등 뒤에 숫자가 있는 경우는 예외)
+      str_remove(., "\\-0(?!\\d)") %>%
+      str_trim(),
     # 읍면
     읍면1 = str_extract(주소1수정, "[가-힣0-9]{1,}(읍|면)(?!읍|면|동|가|리|로|길)") %>%
       str_remove(., "\\d{1,}") %>%
@@ -332,14 +337,39 @@ addr_test <- waterusage %>% select(-c(연도, 하수도요금여부)) %>%
     도로명1 = ifelse(str_detect(도로명_check, str_c(" ", 도로명1, " ")), 도로명1, NA),
     도로명2 = ifelse(str_detect(도로명_check, str_c(" ", 도로명2, " ")), 도로명2, NA),
     # 본번/부번
-    산1 = str_extract(주소1수정, "(?<=동|리|가)[:blank:]*(산)") %>% str_trim(),
-    본번1 = str_extract(주소1수정, "(?<=동|리|가|산)[:blank:]*(\\d{1,})(?!로|길|호)"),
-    부번1 = str_extract(주소1수정, "(?<=동|리|가|산)[:blank:]*([\\d\\-]{1,})") %>%
-      str_extract(., "(?<=\\-)\\d{1,}"),
-    산2 = str_extract(주소2수정, "(?<=동|리|가)[:blank:]*(산)") %>% str_trim(),
-    본번2 = str_extract(주소2수정, "(?<=동|리|가|산)[:blank:]*(\\d{1,})(?!로|길|호)"),
-    부번2 = str_extract(주소2수정, "(?<=동|리|가|산)[:blank:]*([\\d\\-]{1,})") %>%
-      str_extract(., "(?<=\\-)\\d{1,}"),
+    # '산'은 뒤에 숫자인 경우만 추출(다른 주소 항목에 '산'이 포함된 경우 고려)
+    산1 = str_extract(주소1수정, "(?<=동|리|가)\\s*(산)\\s*(?=\\d)") %>% str_trim(),
+    본번1 = ifelse(is.na(동리1), NA,
+                   주소1수정 %>%
+                     str_remove(., "\\d{1,}호") %>% 
+                     str_split_i(., 동리1, -1) %>%
+                     str_extract(., "\\d{1,}")
+    ),
+    부번1 = ifelse(is.na(동리1), NA,
+                   주소1수정 %>%
+                     str_split_i(., 동리1, -1) %>%
+                     str_extract(., "[0-9\\-]{1,}") %>%
+                     str_extract(., "(?<=\\-)\\d{1,}")
+    ),
+    # 본번1 = str_extract(주소1수정, "(?<=동|리|가|산)\\s*\\d{1,}(?!로|길|호)"),
+    # 부번1 = str_extract(주소1수정, "(?<=동|리|가|산)\\s*([\\d\\-]{1,})") %>%
+    #   str_extract(., "(?<=\\-)\\d{1,}"),
+    산2 = str_extract(주소2수정, "(?<=동|리|가)\\s*(산)\\s*(?=\\d)") %>% str_trim(),
+    본번2 = ifelse(is.na(동리2), NA,
+                 주소2수정 %>%
+                   str_remove(., "\\d{1,}호") %>%
+                   str_split_i(., 동리2, -1) %>%
+                   str_extract(., "\\d{1,}")
+    ),
+    부번2 = ifelse(is.na(동리2), NA,
+                 주소2수정 %>%
+                   str_split_i(., 동리2, -1) %>%
+                   str_extract(., "[0-9\\-]{1,}") %>%
+                   str_extract(., "(?<=\\-)\\d{1,}")
+    ),
+    # 본번2 = str_extract(주소2수정, "(?<=동|리|가|산)\\s*\\d{1,}(?!로|길|호)"),
+    # 부번2 = str_extract(주소2수정, "(?<=동|리|가|산)\\s*([\\d\\-]{1,})") %>%
+    #   str_extract(., "(?<=\\-)\\d{1,}"),
     건물본번1 = ifelse(is.na(도로명1), NA,
       주소1수정 %>%
         str_split_i(., 도로명1, 2) %>%
@@ -414,13 +444,13 @@ addr_test <- waterusage %>% select(-c(연도, 하수도요금여부)) %>%
   )
 
 
-### 주소외 기타 내용 정리
+### 주소외 기타 내용 정리  -----
 addr_test1 <- addr_test %>%
     mutate(
       기타1 = 
         str_remove(주소1수정, ifelse(is.na(읍면), "test", 읍면)) %>%
-        str_remove(., ifelse(is.na(동리), "test", 동리)) %>%
         str_remove(., ifelse(is.na(도로명), "test", 도로명)) %>%
+        str_remove(., ifelse(is.na(동리), "test", 동리)) %>%
         str_remove(., ifelse(is.na(산), "test", 산)) %>%
         str_remove(., ifelse(is.na(본번), "test", ifelse(is.na(부번), 본번, str_c(본번, "-", 부번)))) %>%
         str_remove(., ifelse(is.na(건물본번), "test",
@@ -429,70 +459,16 @@ addr_test1 <- addr_test %>%
                  
       기타2 =
         str_remove(주소2수정, ifelse(is.na(읍면), "test", 읍면)) %>%
-        str_remove(., ifelse(is.na(동리), "test", 동리)) %>%
         str_remove(., ifelse(is.na(도로명), "test", 도로명)) %>%
+        str_remove(., ifelse(is.na(동리), "test", 동리)) %>%
         str_remove(., ifelse(is.na(산), "test", 산)) %>%
         str_remove(., ifelse(is.na(본번), "test", ifelse(is.na(부번), 본번, str_c(본번, "-", 부번)))) %>%
         str_remove(., ifelse(is.na(건물본번), "test",
                              ifelse(is.na(건물부번), 건물본번, str_c(건물본번, "-", 건물부번)))) %>% 
         str_remove(.,"\\(\\)") %>% str_trim()
-    )
-
-
-
-### 주소 확인  -----
-addr_test1 <- addr_test %>%
-  # 도로명 주소 기준 확인
-  left_join(도로명주소 %>% select(도로명주소, 도로명주소확인), by = "도로명주소") %>%
-  # 지번 주소 기준 확인
-  left_join(지번주소 %>% select(지번주소, 지번주소확인), by = "지번주소") %>%
-  mutate(across(c(도로명주소확인, 지번주소확인), ~ replace(., is.na(.), "X"))) %>%
-  mutate(
-    도로명주소확인 = ifelse(is.na(도로명주소), "N", 도로명주소확인),
-    지번주소확인 = ifelse(is.na(지번주소), "N", 지번주소확인)
-  ) %>%
-  select(-c(주소1수정:건물부번2), -읍면동, -리, -동리확인, -주소확인) %>%
-  # mutate(
-  #   도로명주소추가확인 = case_when(
-  #     도로명주소확인 == "X" & 지번주소확인 == "X" ~ "Y",
-  #     도로명주소확인 == "X" & 지번주소확인 == "N" ~ "Y",
-  #     TRUE ~ "N"
-  #   ),
-  #   지번주소추가확인 = case_when(
-  #     도로명주소확인 == "X" & 지번주소확인 == "X" ~ "Y",
-  #     도로명주소확인 == "N" & 지번주소확인 == "X" ~ "Y",
-  #     TRUE ~ "N"
-  #   )
-  # ) %>%
-  # 도로명 주소 기준 확인
-  left_join(
-    도로명주소 %>%
-      filter(지하여부 == 0) %>%
-      select(시군, 도로명, 건물본번, 건물부번,
-        도로명주소DB_도로명주소 = 도로명주소,
-        도로명주소DB_지번주소 = 지번주소
-      ),
-    by = c("시군", "도로명", "건물본번", "건물부번")
-  ) %>%
-  left_join(
-    지번주소 %>%
-      select(시군:부번,
-        지번주소DB_도로명주소 = 도로명주소,
-        지번주소DB_지번주소 = 지번주소
-      ),
-    by = c("시군", "읍면", "동리", "산", "본번", "부번")
-  ) %>%
-  mutate(
-    도로명주소DB_도로명주소 = ifelse(도로명주소DB_도로명주소 == 도로명주소, NA, 도로명주소DB_도로명주소),
-    도로명주소DB_지번주소 = ifelse(도로명주소DB_지번주소 == 지번주소, NA, 도로명주소DB_지번주소),
-    지번주소DB_도로명주소 = ifelse(지번주소DB_도로명주소 == 도로명주소, NA, 지번주소DB_도로명주소),
-    지번주소DB_지번주소 = ifelse(지번주소DB_지번주소 == 지번주소, NA, 지번주소DB_지번주소)
-  )
-# group_by(코드) %>% mutate(중복 = length(코드))
-
+    ) %>% 
 
 ### 주소DB자료와 비교 확인  -----
-addr_test2 <- addr_test %>%
   # 읍면을 제외한 나머지 도로명 주소를 이용하여 주소DB자료 결합(읍면 틀린 경우 확인)
   left_join(
     도로명주소 %>%

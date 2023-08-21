@@ -1,4 +1,6 @@
 
+### chromeDriver: https://sites.google.com/chromium.org/driver/
+
 ################################################################################
 ### 라이브러리 로드
 library(tidyverse)

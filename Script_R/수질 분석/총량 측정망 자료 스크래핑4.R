@@ -26,7 +26,7 @@ library(httr)
 hantan <- read_excel("수질 분석/총량측정망_한탄A_0720.xlsx")
 
 
-## 4445번 포트와 크롬 연결
+## 4567번 포트와 크롬 연결
 remDr <- remoteDriver(
   remoteServerAddr = "localhost",
   port = 4567L,
