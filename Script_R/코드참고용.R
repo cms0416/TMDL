@@ -563,7 +563,7 @@ str_glue_data(.x, ..., .sep = "", .envir =
 df %>% rowid_to_column(var = "ID")
 
 # └ e 없이 숫자 표시 -----
-options(scipen=999)  # 지수 표기에서 숫자 표기로 변경경
+options(scipen=999)  # 지수 표기에서 숫자 표기로 변경
 options(scipen=0)    # 다시 기본설정으로 변경
 
 # └ 시군, 단위유역 순서 별 정렬 -----
