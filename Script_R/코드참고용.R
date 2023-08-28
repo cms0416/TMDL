@@ -308,6 +308,7 @@ df %>% summarise(across(c(var1, var2), mean))
 df %>% mutate(across(c(var1, var2), as.factor))
 df %>% mutate(across(c(var1, var2), as.numeric))
 df %>% mutate(across(c(var1, var2), as.Date))
+df %>% mutate(across(c(var1, var2), as.character))
 df %>% mutate(across(where(is.numeric), ~ as.character(.x)))
 
 # 날짜 서식 변경 0000.00.00 → 0000-00-00
@@ -537,8 +538,21 @@ str_match(string, pattern)
 
 
 # 3. Join and Split ----------------------------------------------------
-# ++ str_c() 
+# ++ str_c() -----
 str_c(..., sep = "", collapse = NULL) 
+# sep : 각각의 원소들을 이어줄 때 사용 
+# collapse : 배열 원소들을 이어줄 때 사용
+str_c("prefix", c("a0", "a1", "a2"), "suffix")
+str_c("prefix-", c("a0", "a1", "a2"), "-suffix")
+str_c("prefix", c("a0", "a1", "a2"), "suffix", sep = "-", collapse = ", ")
+
+str_c(c("a0", "a1", "a2"))
+str_c(c("a0", "a1", "a2"), sep = ", ")
+str_c(c("a0", "a1", "a2"), collapse = ", ")
+
+str_c("a0", "a1", "a2")
+str_c("a0", "a1", "a2", sep = ", ")
+str_c("a0", "a1", "a2", collapse = ", ")
 
 # ++ str_flatten()
 str_flatten(string, collapse = "") 

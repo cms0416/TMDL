@@ -7,7 +7,7 @@ devtools::install_github("DesiQuintans/librarian")
 pkg <- c(
   "tidyverse", "data.table", "ggthemes", "writexl", "openxlsx",
   "extrafont", "rvest", "RSelenium", "seleniumPipes", "styler", 
-  "remotes", "progress"
+  "remotes", "progress", "sf", "sp"
 )
 
 new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
@@ -27,9 +27,11 @@ library(seleniumPipes)
 library(styler)
 library(remotes)
 library(progress)
+library(sf)  # GIS 관련
+library(sp)  # GIS 관련
 
 shelf("tidyverse", "data.table", "ggthemes", "writexl", "extrafont", "rvest", 
-      "RSelenium", "seleniumPipes", "styler", "remotes", "progress")
+      "RSelenium", "seleniumPipes", "styler", "remotes", "progress", "sf", "sp")
 
 
 ### 퀀트 관련 패키지

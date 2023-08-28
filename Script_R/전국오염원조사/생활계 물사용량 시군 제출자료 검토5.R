@@ -600,7 +600,7 @@ pb_doro <- progress_bar$new(
   width = 80 # 진행 경과 막대 너비
 )
 
-result_doro <- data.frame()
+result_doro <- tibble()
 
 for (i in 1:nrow(address_doro)) {
   place_list <- GET(
@@ -663,7 +663,7 @@ pb_jibun <- progress_bar$new(
   width = 80 # 진행 경과 막대 너비
 )
 
-result_jibun <- data.frame()
+result_jibun <- tibble()
 
 for (i in 1:nrow(address_jibun)) {
   place_list <- GET(
