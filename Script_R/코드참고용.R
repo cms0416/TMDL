@@ -306,7 +306,8 @@ df %>% summarise(across(c(var1, var2), mean))
 # mutate()
 # 자료 형태 변경
 df %>% mutate(across(c(var1, var2), as.factor))
-df %>% mutate(across(c(var1, var2), as.numeric))
+df %>% mutate(across(c(var1, var2), as.numeric)) # 실수(소수점 이하 포함)로 전환
+df %>% mutate(across(c(var1, var2), as.integer)) # 정수(소수점 이하 미포함)로 전환
 df %>% mutate(across(c(var1, var2), as.Date))
 df %>% mutate(across(c(var1, var2), as.character))
 df %>% mutate(across(where(is.numeric), ~ as.character(.x)))
@@ -460,7 +461,8 @@ df %>%
 df %>% pivot_wider(
   names_from = name, 
   values_from = value,
-  values_fn = mean)
+  values_fn = mean
+  )
 
 
 
