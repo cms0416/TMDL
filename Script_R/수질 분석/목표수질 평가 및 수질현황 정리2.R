@@ -100,7 +100,7 @@ TOC_achievement <- obs_achievement %>%
 
 
 
-## -----------------------------------------------------------------------------
+## 지점별 달성률 계산 및 정리 --------------------------------------------------
 BOD_group <- tibble()
 TP_group <- tibble()
 TOC_group <- tibble()
@@ -152,7 +152,7 @@ for (i in 2016:2023) {
 
   TP_group <- bind_rows(TP_group, temp)
 
-  ## TOC -----------------------------------------------------------------------
+  ## TOC ________________________________________________________________________
   temp <- TOC_achievement %>%
     # 지점별 그룹지정
     group_by(총량지점명) %>%
@@ -175,7 +175,7 @@ for (i in 2016:2023) {
 
   TOC_group <- bind_rows(TOC_group, temp)
 }
-## -----------------------------------------------------------------------------
+## _____________________________________________________________________________
 
 
 ## 자료 정리
@@ -279,6 +279,7 @@ for (i in 2016:2023) {
 
 
 ###################  전체 자료 합치기  #########################################
+## BOD
 BOD_total <- BOD_ymean %>% 
   left_join(
     bind_rows(BOD_ach.rate, BOD_assessment),
@@ -296,6 +297,7 @@ BOD_total <- BOD_ymean %>%
   ))) %>%
   arrange(총량지점명)
 
+## T-P
 TP_total <- TP_ymean %>% 
   left_join(
     bind_rows(TP_ach.rate, TP_assessment),
@@ -313,6 +315,7 @@ TP_total <- TP_ymean %>%
   ))) %>%
   arrange(총량지점명)
 
+## TOC
 TOC_total <- TOC_ymean %>% 
   left_join(
     bind_rows(TOC_ach.rate, TOC_assessment),
@@ -331,12 +334,16 @@ TOC_total <- TOC_ymean %>%
   arrange(총량지점명)
 
 
-#################################################################################
-## 엑셀 파일 내보내기_writexl
+###################  파일 내보내기  ############################################
+
+## 강원도 자료 내보내기
 write_xlsx(list("BOD" = BOD_total %>% filter(강원도 == "강원도"), 
                 "TP" = TP_total %>% filter(강원도 == "강원도"), 
                 "TOC" = TOC_total %>% filter(강원도 == "강원도")), 
            path = "수질 분석/Output/강원도 수질현황.xlsx")
 
+## 한강수계 전체 자료 내보내기
 write_xlsx(list("BOD" = BOD_total, "TP" = TP_total, "TOC" = TOC_total), 
            path = "수질 분석/Output/한강수계 전체 수질현황.xlsx")
+
+
