@@ -173,6 +173,7 @@ df %>% rename_with(toupper, contains("a"))
 df %>% rename_with(~ tolower(gsub(".", "_", .x, fixed = TRUE)))
 df %>% rename_with(~ str_remove(., "a_"))
 df %>% rename_with(~ str_replace(., "a_", "b_"))
+df %>% rename_with(~ str_c(i - 2002, "~", i - 2000), var1)
 
 # ++ set_names() : 변수명 일괄 변경 -----
 df %>% set_names(c("x1", "x2", "x3"))
