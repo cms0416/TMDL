@@ -25,7 +25,7 @@ hantan <- read_excel("수질 분석/총량측정망_한탄A_0720.xlsx")
 binman::list_versions('chromedriver')
 
 ## 크롬 브라우저
-wdman::chrome(port = 4567L, version = '116.0.5845.96')
+wdman::chrome(port = 4567L)  # version = '116.0.5845.96'
 
 ## 셀레니움 서버
 rD <- rsDriver(

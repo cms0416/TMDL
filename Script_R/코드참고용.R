@@ -314,7 +314,7 @@ df %>% mutate(across(where(is.numeric), ~ as.character(.x)))
 
 # 날짜 서식 변경 0000.00.00 → 0000-00-00
 df %>% mutate(across(c(var1, var2), ~ str_replace_all(., "\\.", "-")))
-
+df %>% mutate(날짜 = str_replace_all(날짜, "\\.", "-"))
 
 # filter()
 # var로 시작하는 변수의 값이 모두 5 이상인 행을 선택

@@ -12,25 +12,16 @@ source("Script_R/Function/round2func.R")
 
 
 #####  파일 불러오기  ###############################################################
-obs <- read_excel("수질 분석/총량측정망0723.xlsx")
+obs <- read_excel("수질 분석/총량측정망0723_1.xlsx")
 
 target <- read_excel("수질 분석/목표수질.xlsx") %>%
-  filter(총량지점명 %in% c(
-    "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A", "섬강A", "섬강B",
-    "북한A", "북한B", "소양A", "인북A", "소양B", "북한C", "홍천A", "한탄A",
-    "제천A", "한강B", "한강D"
-  ))
-
+  filter(강원도 == "강원도")
 
 #####  obs_측정값 정리  #############################################################
 obs_achievement <- obs %>%
   left_join(target, by = "총량지점명") %>%
-  filter(총량지점명 %in% c(
-    "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A", "섬강A", "섬강B",
-    "북한A", "북한B", "소양A", "인북A", "소양B", "북한C", "홍천A", "한탄A",
-    "제천A", "한강B", "한강D"
-  )) %>%
-  filter(연도 >= 2015) %>%
+  filter(강원도 == "강원도") %>%
+  filter(연도 >= 2014) %>%
   # BOD열에서 결측치 제거(결측치가 아닌 값들만 필터)
   filter(!is.na(BOD)) %>%
   select(-c(수온, pH, EC, DO, COD, SS, TN))
@@ -62,35 +53,36 @@ TOC <- obs_achievement %>%
 ### 지점별 연평균 계산_dplyr, tidyr
 BOD_ymean <- obs_achievement %>%
   # 지점별, 연도별 분리
-  group_by(강원도, 권역, 총량지점명, BOD_목표수질, 연도) %>%
+  group_by(권역, 총량지점명, BOD_목표수질, 연도) %>%
   # BOD 연평균(소수점 1자리로 표시)
-  summarise(BOD = round2(mean(BOD, na.rm = TRUE), 1)) %>%
+  summarise(BOD = round2(mean(BOD, na.rm = TRUE), 1), .groups = "drop") %>%
   # 연평균 데이터 포맷 변환(긴 형식 -> 넓은 형식)
   pivot_wider(names_from = 연도, values_from = BOD)
 
 TP_ymean <- obs_achievement %>%
   # 지점별, 연도별 분리
-  group_by(강원도, 권역, 총량지점명, TP_목표수질, 연도) %>%
+  group_by(권역, 총량지점명, TP_목표수질, 연도) %>%
   # TP 연평균(소수점 3자리로 표시)
-  summarise(TP = round2(mean(TP, na.rm = TRUE), 3)) %>%
+  summarise(TP = round2(mean(TP, na.rm = TRUE), 3), .groups = "drop") %>%
   # 연평균 데이터 포맷 변환(긴 형식 -> 넓은 형식)
   pivot_wider(names_from = 연도, values_from = TP)
 
 TOC_ymean <- obs_achievement %>%
   # 지점별, 연도별 분리
-  group_by(강원도, 권역, 총량지점명, TOC_목표수질, 연도) %>%
+  group_by(권역, 총량지점명, TOC_목표수질, 연도) %>%
   # TOC 연평균(소수점 1자리로 표시)
-  summarise(TOC = round2(mean(TOC, na.rm = TRUE), 1)) %>%
+  summarise(TOC = round2(mean(TOC, na.rm = TRUE), 1), .groups = "drop") %>%
   # 연평균 데이터 포맷 변환(긴 형식 -> 넓은 형식)
   pivot_wider(names_from = 연도, values_from = TOC)
 
 ## BOD, T-P 통합 연평균 수질 자료 정리
 BOD_TP_ymean <- obs_achievement %>%
   # 지점별, 연도별 분리
-  group_by(강원도, 권역, 총량지점명, 연도) %>%
+  group_by(권역, 총량지점명, 연도) %>%
   # BOD 연평균(소수점 1자리로 표시)
   summarise(BOD = round2(mean(BOD, na.rm = TRUE), 1),
-            TP = round2(mean(TP, na.rm = TRUE), 3)) %>% 
+            TP = round2(mean(TP, na.rm = TRUE), 3), 
+            .groups = "drop") %>% 
   pivot_wider(
     names_from = 연도,
     values_from = c(BOD, TP)
@@ -106,11 +98,11 @@ BOD_TP_ymean <- obs_achievement %>%
 
 #####  달성률 산정  #################################################################
 
-BOD_group0 <- data.frame()
-TP_group0 <- data.frame()
-TOC_group0 <- data.frame()
+BOD_group0 <- tibble()
+TP_group0 <- tibble()
+TOC_group0 <- tibble()
 
-for (i in 2017:2023) {
+for (i in 2016:2023) {
   ## BOD _______________________________________________________________________
   temp <- BOD %>%
     # 지점별 그룹지정
@@ -224,11 +216,11 @@ TOC_ach.conc <- TOC_group %>%
 ### 달성률 BOD, T-P 합쳐서 정리
 BOD_TP_ach.rate <- BOD_ach.rate %>%
   mutate(항목 = "BOD", .before = 1) %>%
-  rbind(., TP_ach.rate %>%
+  bind_rows(., TP_ach.rate %>%
     mutate(항목 = "T-P", .before = 1)) %>%
   pivot_wider(
     names_from = 항목,
-    values_from = c(3:9)
+    values_from = c(3:10)
   ) %>%
   mutate(총량지점명 = factor(총량지점명, levels = c(
     "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A", "섬강A", "섬강B",
