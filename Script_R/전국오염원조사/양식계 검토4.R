@@ -229,7 +229,7 @@ for (i in 1:nrow(address)) {
   filter(!is.na(단위유역)) %>%
   group_by(연도, 시군, 단위유역) %>%
   summarise(시설면적 = sum(시설면적), .groups = "drop") %>%
-  rbind(
+  bind_rows(
     양식장현황_최종 %>%
       filter(연도 == 2022) %>%
       filter(!is.na(단위유역)) %>%

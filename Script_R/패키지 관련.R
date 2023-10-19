@@ -7,7 +7,7 @@ devtools::install_github("DesiQuintans/librarian")
 pkg <- c(
   "tidyverse", "data.table", "ggthemes", "writexl", "openxlsx",
   "extrafont", "rvest", "RSelenium", "seleniumPipes", "styler", 
-  "remotes", "progress", "datapasta", "sf", "sp"
+  "remotes", "progress", "datapasta", "sf", "sp", "janitor", "gt"
 )
 
 new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
@@ -30,9 +30,12 @@ library(progress)
 library(datapasta)  # 엑셀에 있는 데이터 바로 tibble이나 data.frame으로 붙여넣기
 library(sf)  # GIS 관련
 library(sp)  # GIS 관련
+library(janitor)  # 데이터 분석 도구
+library(gt)  # 표 꾸미기
 
 shelf("tidyverse", "data.table", "ggthemes", "writexl", "extrafont", "rvest", 
-      "RSelenium", "seleniumPipes", "styler", "remotes", "progress", "sf", "sp")
+      "RSelenium", "seleniumPipes", "styler", "remotes", "progress", "sf", "sp",
+      "janitor", "gt")
 
 
 ### 퀀트 관련 패키지
