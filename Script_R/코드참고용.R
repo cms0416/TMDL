@@ -187,7 +187,7 @@ head(mtcars) %>% set_names(paste0, "_foo")
 names(df) <- c("x4", "x2", "x5")
 
 
-# └ 2.3 relocate() : 열의 위치 변경 --------------------------------------------
+# └ 2.3 relocate() : 열의 위치(순서) 변경 --------------------------------------
 df %>% relocate(var5)                             # var5를 맨 앞으로 이동
 df %>% relocate(var5, .after = var2)              # var5를 var2 뒤로 이동
 df %>% relocate(var5, .before = var3)             # var5를 var3 앞으로 이동
