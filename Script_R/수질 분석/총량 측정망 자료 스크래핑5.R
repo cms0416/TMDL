@@ -30,8 +30,8 @@ wdman::chrome(port = 4567L)  # version = '116.0.5845.96'
 ## 셀레니움 서버
 rD <- rsDriver(
   port = 4567L,
-  browser = 'chrome',
-  chromever = '116.0.5845.96'
+  browser = 'chrome'
+  # chromever = '116.0.5845.96'
 )
 
 remDr <- rD$client

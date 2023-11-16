@@ -189,6 +189,17 @@ BOD_total <- bind_files(BOD)
 TP_total <- bind_files(TP)
 TOC_total <- bind_files(TOC)
 
+## BOD, TP 표 하나에 정리(업무보고 양식)
+BOD_TP_total <- BOD_total %>% 
+  select(-c(5:14)) %>% 
+  # mutate(항목 = "BOD", .before = 1) %>% 
+  left_join(TP_total %>% 
+              select(-c(5:14)),
+            by = c("강원도", "권역", "총량지점명")) %>%
+  filter(강원도 == "강원도") %>% 
+  select("강원도":"BOD_목표수질", "TP_목표수질", sort(names(.))) %>% 
+  rename_with(~ str_replace(., ".x", "_BOD")) %>% 
+  rename_with(~ str_replace(., ".y", "_TP"))
 
 
 
@@ -199,7 +210,8 @@ write_xlsx(
   list(
     "BOD" = BOD_total %>% filter(강원도 == "강원도"),
     "TP" = TP_total %>% filter(강원도 == "강원도"),
-    "TOC" = TOC_total %>% filter(강원도 == "강원도")
+    "TOC" = TOC_total %>% filter(강원도 == "강원도"),
+    "BOD_TP_통합" = BOD_TP_total
   ),
   path = "수질 분석/Output/강원도 수질현황.xlsx"
 )

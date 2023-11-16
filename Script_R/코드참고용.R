@@ -142,6 +142,10 @@ df %>% select(1:4, !1)      # 1~4번 변수 + (1번 변수 제외 나머지) = �
 df %>% select(where(is.numeric))                       # 수(int, dbl)만 선택
 df %>% select(where(is.numeric) | where(is.character)) # 수 또는 문자형 변수를 선택
 
+# ++ 열이름순으로 열순서 정렬 -----
+df %>% select(sort(names(.)))
+df %>% select(var1:var3, sort(names(.)))  # 특정 열은 먼저 선택 후 나머지 열은 이름순 정렬
+
 # select()에서 사용할 수 있는 함수
 # - everything(): 모든 변수를 선택한다.
 # - last_col(): 마지막 변수를 선택한다.
@@ -602,13 +606,17 @@ df %>%
     ))) %>% 
   arrange(단위유역, 시군)
 
-# └ 소계 계산(janitor::adorn_totals)
+# └ 소계 계산(janitor::adorn_totals) -----
 library(janitor)
 
 df %>% 
   group_by(시군) %>% 
   group_modify(~ .x %>% adorn_totals(where = "row", name = "소계"))
 
-
-
+df %>% 
+  # 강원도 총계 계산
+  adorn_totals(where = "row", fill = "합계", name = "강원도") %>% 
+  # 시군별 소계 계산
+  group_by(시군) %>% 
+  group_modify(~ .x %>% adorn_totals(where = "row", name = "소계"))
 
