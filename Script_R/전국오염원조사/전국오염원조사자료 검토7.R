@@ -49,7 +49,7 @@ population <- population %>%
     "비시가인구_하수미처리구역_수거식"
   )) %>%
   # 수치데이터 및 연도 숫자로 지정
-  mutate_at(vars(1, 7:23), as.numeric) %>%
+  mutate(across(c(1, 7:23), as.numeric)) %>%
   # 주소코드 추가("리"가 없는 "동"의 경우 "법정리"칸에 "동"으로 추가)
   mutate(주소 = str_c(시군구, 법정동, ifelse(is.na(법정리), 법정동, 법정리), sep = " "))
 

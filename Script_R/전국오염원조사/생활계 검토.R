@@ -1,9 +1,9 @@
 ## 관련 패키지 로드
 library(tidyverse)
 library(magrittr)
-library(data.table)
 library(readxl)
 library(writexl)
+# library(data.table)
 
 
 ## 공통파일(단위유역별 점유율) 불러오기
@@ -45,7 +45,7 @@ files <- list.files(
     "비시가인구_하수미처리구역_수거식"
   ))%>%
   # 주소코드 추가("리"가 없는 "동"의 경우 "법정리"칸에 "동"으로 추가)
-  mutate(주소 = paste(시군구, 법정동, ifelse(is.na(.$법정리), 법정동, 법정리))) 
+  mutate(주소 = str_c(시군구, 법정동, ifelse(is.na(법정리), 법정동, 법정리), sep = " "))
 
 
 인구_시군구 <- 인구_원본 %>%
@@ -60,8 +60,6 @@ files <- list.files(
 
 
 
-
-
 # 연도 및 동리 별 가정인구합계 정리
 population_total <- population %>%
   group_by(연도, 주소) %>%
@@ -73,7 +71,7 @@ share_population <- share %>%
   summarise(생활계 = sum(생활계) / 100)
 
 # 유역/시군 기준 인구 합계 연도별 정리
-population_sum <- data.frame()
+population_sum <- tibble()
 
 for (i in 2014:2020) {
   temp <- share_population %>%
@@ -90,17 +88,17 @@ for (i in 2014:2020) {
 # 유역별 합계
 population_subtotal_1 <- population_sum %>%
   group_by(연도, 단위유역) %>%
-  summarise(총인구 = sum(총인구)) %>%
+  summarise(총인구 = sum(총인구), .groups = "drop") %>%
   mutate(시군구 = "합계") %>%
   select(연도, 단위유역, 시군구, 총인구)
 
 # 유역별 합계 합치기
-population_sum <- rbind(population_sum, population_subtotal_1)
+population_sum <- bind_rows(population_sum, population_subtotal_1)
 
 # 시군별 합계
 population_subtotal_2 <- population_sum %>%
   group_by(연도, 시군구) %>%
-  summarise(총인구 = sum(총인구)) %>%
+  summarise(총인구 = sum(총인구), .groups = "drop") %>%
   mutate(단위유역 = "합계") %>%
   select(연도, 단위유역, 시군구, 총인구)
 
@@ -110,75 +108,57 @@ population_sum <- rbind(population_sum, population_subtotal_2)
 ## *****************************************************************************
 
 
-# 권역 추가 후 단위유역, 시군구, 권역 factor로 지정
+## 권역추가, 단위유역, 시군구 순서 설정 및 각 연도를 열로 변경(wide 포맷)
 population_sum <- population_sum %>%
-  mutate(권역 = ifelse(단위유역 == "골지A" | 단위유역 == "오대A" | 단위유역 == "주천A" |
-    단위유역 == "평창A" | 단위유역 == "옥동A" | 단위유역 == "한강A", "남한강",
-  ifelse(단위유역 == "섬강A" | 단위유역 == "섬강B", "섬강",
-    ifelse(단위유역 == "북한A" | 단위유역 == "북한B" | 단위유역 == "소양A" |
-      단위유역 == "인북A" | 단위유역 == "소양B" | 단위유역 == "북한C", "북한강",
-    ifelse(단위유역 == "홍천A", "홍천강",
-      ifelse(단위유역 == "한탄A", "한탄강",
-        ifelse(단위유역 == "한강B" | 단위유역 == "제천A" | 단위유역 == "한강D", "충청북도",
-          ifelse(단위유역 == "북한D" | 단위유역 == "한탄B" | 단위유역 == "임진A", "경기도",
-            ifelse(단위유역 == "낙본A", "낙동강", "기타")
-          )
-        )
-      )
+  mutate(
+    단위유역 = factor(단위유역, levels = c(
+      "합계", "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A",
+      "섬강A", "섬강B", "북한A", "북한B", "소양A", "인북A", "소양B", "북한C",
+      "홍천A", "한탄A", "한강B", "제천A", "한강D", "북한D", "한탄B", "임진A",
+      "낙본A", "기타"
+    )),
+    시군구 = factor(시군구, levels = c(
+      "합계", "춘천시", "원주시", "강릉시", "태백시", "삼척시", "홍천군",
+      "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군",
+      "양구군", "인제군", "고성군", "동해시", "속초시", "양양군"
+    )),
+    권역 = case_when(
+      단위유역 == "골지A" | 단위유역 == "오대A" | 단위유역 == "주천A" |
+        단위유역 == "평창A" | 단위유역 == "옥동A" | 단위유역 == "한강A" ~ "남한강",
+      단위유역 == "섬강A" | 단위유역 == "섬강B" ~ "섬강",
+      단위유역 == "북한A" | 단위유역 == "북한B" | 단위유역 == "소양A" |
+        단위유역 == "인북A" | 단위유역 == "소양B" | 단위유역 == "북한C" ~ "북한강",
+      단위유역 == "홍천A" ~ "홍천강",
+      단위유역 == "한탄A" ~ "한탄강",
+      단위유역 == "한강B" | 단위유역 == "제천A" | 단위유역 == "한강D" ~ "충청북도",
+      단위유역 == "북한D" | 단위유역 == "한탄B" | 단위유역 == "임진A" ~ "경기도",
+      단위유역 == "낙본A" ~ "낙동강",
+      TRUE ~ "기타"
     )
-    )
-  )
-  )) %>%
+  ) %>%
   select(권역, everything()) %>%
-  mutate_at(vars(단위유역, 시군구, 권역), as.factor)
-
-# 단위유역, 시군구 순서 설정 및 각 연도를 열로 변경(wide 포맷)
-population_sum <- population_sum %>%
-  mutate(단위유역 = factor(단위유역, levels = c(
-    "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A", "섬강A", "섬강B",
-    "북한A", "북한B", "소양A", "인북A", "소양B", "북한C", "홍천A", "한탄A",
-    "한강B", "제천A", "한강D", "북한D", "한탄B", "임진A", "낙본A", "기타", "합계"
-  ))) %>%
-  mutate(시군구 = factor(시군구, levels = c(
-    "춘천시", "원주시", "강릉시", "태백시", "삼척시", "홍천군", 
-    "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군", 
-    "양구군", "인제군", "고성군", "동해시", "속초시", "양양군", "합계"
-  ))) %>%
-  mutate(권역 = ifelse(단위유역 == "골지A" | 단위유역 == "오대A" | 단위유역 == "주천A" |
-    단위유역 == "평창A" | 단위유역 == "옥동A" | 단위유역 == "한강A", "남한강",
-  ifelse(단위유역 == "섬강A" | 단위유역 == "섬강B", "섬강",
-    ifelse(단위유역 == "북한A" | 단위유역 == "북한B" | 단위유역 == "소양A" |
-      단위유역 == "인북A" | 단위유역 == "소양B" | 단위유역 == "북한C", "북한강",
-    ifelse(단위유역 == "홍천A", "홍천강",
-      ifelse(단위유역 == "한탄A", "한탄강",
-        ifelse(단위유역 == "한강B" | 단위유역 == "제천A" | 단위유역 == "한강D", "충청북도",
-          ifelse(단위유역 == "북한D" | 단위유역 == "한탄B" | 단위유역 == "임진A", "경기도",
-            ifelse(단위유역 == "낙본A", "낙동강", "기타")
-          )
-        )
-      )
-    )
-    )
-  )
-  )) %>%
-  select(권역, everything()) %>%
+  # 각 연도를 열로 변경(wide 포맷)
   pivot_wider(names_from = 연도, values_from = 총인구) %>%
   arrange(단위유역, 시군구)
 
-# 시군 기준 정리
+## 시군 기준 정리
 population_sum_s <- population_sum %>%
   arrange(시군구, 단위유역) %>%
-  select(시군구, everything(), -권역) %>%
-  filter(시군구 != "합계")
+  select(시군구, everything(), -권역)
+# filter(시군구 != "합계")
+
+
+##______________________________________________________________________________
 population_sum <- population_sum %>% filter(단위유역 != "합계")
 
-### 권역별 정리
+## 권역별 정리
 population_sum_a <- population_sum %>%
   filter(시군구 == "합계") %>%
   group_by(권역) %>%
-  summarise_at(vars(c("2014":"2020")), funs(sum)) %>%
+  summarise_at(vars(`2014`:`2022`), ~ sum(.)) %>%
   mutate(권역 = factor(권역, levels = c(
-    "남한강", "섬강", "북한강", "홍천강", "한탄강", "충청북도", "경기도", "낙동강", "기타"
+    "남한강", "섬강", "북한강", "홍천강", "한탄강",
+    "충청북도", "경기도", "낙동강", "기타"
   ))) %>%
   arrange(권역)
 

@@ -25,10 +25,10 @@ files <- list.files(
 )
 
 ## Excel 파일을 읽어와 데이터를 합치는 함수
-read_and_combine_data <- function(files) {
+load_data <- function(files) {
   data <- files %>%
     map_dfr(~ {
-      data <- read_excel(.x, skip = 3, col_names = FALSE) 
+      data <- read_excel(.x, skip = 3, col_names = F) 
       year <- str_sub(basename(.x), 1, 4) %>% as.integer()
       data <- data %>% mutate(연도 = year, .before = 1) 
       # 2021년 이전 자료의 경우 인허가관리번호 항목 3개 추가(1열 뒤)
@@ -52,7 +52,7 @@ read_and_combine_data <- function(files) {
 }
 
 
-양식장현황_원본 <- read_and_combine_data(files)
+양식장현황_원본 <- load_data(files)
 
 
 
