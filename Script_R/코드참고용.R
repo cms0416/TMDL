@@ -248,9 +248,9 @@ df %>% group_by(var1) %>% sumamrise(total_num = n()) %>% ungroup()
 # └ 4.2 그룹 데이터 프레임(group_by())에 dplyr 함수 적용하기 -------------------
 # summarise()
 # var1 그룹별로 var2 평균
-df %>% group_by(var1) %>% summarise(var2_mean = mean(var2, na.rm=TRUE))
+df %>% group_by(var1) %>% summarise(var2_mean = mean(var2, na.rm=TRUE), .groups = "drop")
 # var1 그룹별로 var2가 결측값인 행의 개수
-df %>% group(var1) %>% summarise(na_count=sum(is.na(var2)))
+df %>% group(var1) %>% summarise(na_count=sum(var2, na.rm=TRUE), .groups = "drop")
 
 # select() : 그룹을 구성하는 변수는 선택 대상이 아니어도 자동으로 선택된다.
 
@@ -467,9 +467,11 @@ df %>%
 
 # 예시 
 df %>% pivot_wider(
-  names_from = name, 
-  values_from = value,
-  values_fn = mean
+  names_from = 단위유역, 
+  names_glue = "{단위유역}_{.value}",
+  names_sort = TRUE,
+  names_vary = "slowest",
+  values_from = c("젖소":"합계")
   )
 
 

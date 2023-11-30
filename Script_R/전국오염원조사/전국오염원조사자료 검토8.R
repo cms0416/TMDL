@@ -550,6 +550,12 @@ industry_sum3 <- industry_sum %>%
   order_func(., "폐수방류량", "")
 
 
+## 권역 제외
+industry_sum1_s <- industry_sum1 %>% select(-권역)
+industry_sum2_s <- industry_sum2 %>% select(-권역)
+industry_sum3_s <- industry_sum3 %>% select(-권역)
+
+
 ## ______________________________________________________________________________
 
 ## 권역별 정리
@@ -755,7 +761,8 @@ landuse_sum <- landuse_sum %>%
   order_func(., "총면적", "지목")
 
 
-
+## 권역 제외
+landuse_sum_s <- landuse_sum %>% select(-권역)
 
 ## ______________________________________________________________________________
 
@@ -787,46 +794,44 @@ write_xlsx(
 
 ## *****  파일 불러오기  *******************************************************
 # 데이터 경로지정 및 데이터 목록
-dir <- ("전국오염원조사/양식계")
-files <- list.files(dir)
+files <- list.files(
+  path = "전국오염원조사/양식계",
+  pattern = "*.xls", full.names = T
+)
 
 # 데이터 불러오기 및 합치기
-fishfarm <- tibble()
-
-for (file in files) {
-  print(file)
-  temp <- read_excel(file.path(dir, file), skip = 3, col_names = F) %>%
-    # str_sub(문자열, 시작위치, 끝위치) : 연도 추출
-    mutate(연도 = str_sub(file, 1, 4))
-
-  # 2022년 이전 자료의 경우 인허가관리번호 항목 3개 추가(1열 뒤)
-  if (str_sub(file, 1, 4) < 2021) {
-    temp %<>% mutate(
-      어업양식업면허대장 = "",
-      양식업허가대장 = "",
-      새올행정시스템 = "",
-      .after = 1
-    )
-  }
-
-  temp %<>%
-    select(6, 9:11, 17, 21, 27, 29, 연도) %>%
-    set_names(c(
-      "업소명", "시군", "법정동", "법정리", "종류",
-      "시설면적", "방류하천", "휴업", "연도"
-    ))
-
-  fishfarm <- bind_rows(fishfarm, temp)
-}
+fishfarm <- files %>%
+  map_dfr(~ {
+    data <- read_excel(.x, skip = 3, col_names = F) 
+    year <- str_sub(basename(.x), 1, 4) %>% as.integer()
+    data <- data %>% mutate(연도 = year, .before = 1) 
+    # 2021년 이전 자료의 경우 인허가관리번호 항목 3개 추가(1열 뒤)
+    if (year < 2021) {
+      data %<>% mutate(
+        어업양식업면허대장 = NA,
+        양식업허가대장 = NA,
+        새올행정시스템 = NA,
+        .after = 2
+      )
+    } else {
+      data %<>% rename(
+        어업양식업면허대장 = ...2,
+        양식업허가대장 = ...3,
+        새올행정시스템 = ...4
+      )
+    }
+    
+  })
 
 ## *****************************************************************************
 
 
 ## 변수명 지정 및 데이터 정리
 fishfarm <- fishfarm %>%
+  select(연도, 7, 10:12, 18, 22, 28, 30) %>%
   set_names(c(
-    "업소명", "시군", "법정동", "법정리", "종류",
-    "시설면적", "방류하천", "휴업", "연도"
+    "연도", "업소명", "시군", "법정동", "법정리", "종류",
+    "시설면적", "방류하천", "휴업"
   )) %>%
   # 시설면적, 연도 숫자로 지정
   mutate(across(c(시설면적, 연도), as.numeric)) %>%
@@ -866,80 +871,19 @@ for (i in 2014:2022) {
   fishfarm_sum <- bind_rows(fishfarm_sum, temp)
 }
 
+
 ## *****  소계 계산  ***********************************************************
-# 유역별 합계
-fishfarm_subtotal_1 <- fishfarm_sum %>%
-  group_by(연도, 단위유역, 종류) %>%
-  summarise(시설면적 = sum(시설면적), .groups = "drop") %>%
-  mutate(시군 = "합계") %>%
-  select(연도, 단위유역, 시군, 종류, 시설면적)
-
-# 유역별 합계 합치기
-fishfarm_sum <- bind_rows(fishfarm_sum, fishfarm_subtotal_1)
-
-# 시군및 유역별 소계
-fishfarm_subtotal_2 <- fishfarm_sum %>%
-  group_by(연도, 단위유역, 시군) %>%
-  summarise(시설면적 = sum(시설면적), .groups = "drop") %>%
-  mutate(종류 = "소계") %>%
-  select(연도, 단위유역, 시군, 종류, 시설면적)
-
-# 시군및 유역별 소계 합치기
-fishfarm_sum <- bind_rows(fishfarm_sum, fishfarm_subtotal_2)
-
-# 시군별 합계
-fishfarm_subtotal_3 <- fishfarm_sum %>%
-  group_by(연도, 시군, 종류) %>%
-  summarise(시설면적 = sum(시설면적), .groups = "drop") %>%
-  mutate(단위유역 = "합계") %>%
-  select(연도, 단위유역, 시군, 종류, 시설면적)
-
-# 시군별 합계 합치기
-fishfarm_sum <- bind_rows(fishfarm_sum, fishfarm_subtotal_3)
-## *****************************************************************************
+## 소계 계산, 단위유역/시군 순서 지정, 연도 기준 wide 포맷 변환
+fishfarm_sum <- fishfarm_sum %>% 
+  subtotal_2(., "종류") %>% 
+  mutate(종류 = factor(종류, levels = c(
+    "가두리", "유수식", "도전양식", "지수식", "소계"
+  ))) %>% 
+  order_func(., "시설면적", "종류")
 
 
-## 권역추가, 단위유역, 시군 순서 설정 및 각 연도를 열로 변경(wide 포맷)
-fishfarm_sum <- fishfarm_sum %>%
-  mutate(
-    단위유역 = factor(단위유역, levels = c(
-      "합계", "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A",
-      "섬강A", "섬강B", "북한A", "북한B", "소양A", "인북A", "소양B", "북한C",
-      "홍천A", "한탄A", "한강B", "제천A", "한강D", "북한D", "한탄B", "임진A",
-      "낙본A", "기타"
-    )),
-    시군 = factor(시군, levels = c(
-      "합계", "춘천시", "원주시", "강릉시", "태백시", "삼척시", "홍천군",
-      "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군",
-      "양구군", "인제군", "고성군", "동해시", "속초시", "양양군"
-    )),
-    권역 = case_when(
-      단위유역 == "골지A" | 단위유역 == "오대A" | 단위유역 == "주천A" |
-        단위유역 == "평창A" | 단위유역 == "옥동A" | 단위유역 == "한강A" ~ "남한강",
-      단위유역 == "섬강A" | 단위유역 == "섬강B" ~ "섬강",
-      단위유역 == "북한A" | 단위유역 == "북한B" | 단위유역 == "소양A" |
-        단위유역 == "인북A" | 단위유역 == "소양B" | 단위유역 == "북한C" ~ "북한강",
-      단위유역 == "홍천A" ~ "홍천강",
-      단위유역 == "한탄A" ~ "한탄강",
-      단위유역 == "한강B" | 단위유역 == "제천A" | 단위유역 == "한강D" ~ "충청북도",
-      단위유역 == "북한D" | 단위유역 == "한탄B" | 단위유역 == "임진A" ~ "경기도",
-      단위유역 == "낙본A" ~ "낙동강",
-      TRUE ~ "기타"
-    ),
-    종류 = factor(종류, levels = c(
-      "가두리", "유수식", "도전양식", "지수식", "소계"
-    ))
-  ) %>%
-  select(권역, everything()) %>%
-  # 각 연도를 열로 변경(wide 포맷)
-  pivot_wider(names_from = 연도, values_from = 시설면적) %>%
-  arrange(단위유역, 시군, 종류)
-
-## 시군 기준 정리
-fishfarm_sum_s <- fishfarm_sum %>%
-  arrange(시군, 단위유역, 종류) %>%
-  select(시군, everything(), -권역)
-# filter(시군 != "합계")
+## 권역 제외
+fishfarm_sum_s <- fishfarm_sum %>% select(-권역)
 
 
 ## ______________________________________________________________________________
@@ -981,27 +925,26 @@ landfill_a <- read_excel("전국오염원조사/매립장 현황.xlsx") %>%
 
 ## *****  파일 불러오기  *******************************************************
 # 데이터 경로지정 및 데이터 목록
-dir <- ("전국오염원조사/매립계")
-files <- list.files(dir)
+files <- list.files(
+  path = "전국오염원조사/매립계",
+  pattern = "*.xls", full.names = T
+)
 
 # 데이터 불러오기 및 합치기
-landfill1 <- tibble()
-
-for (file in files) {
-  print(file)
-  temp <- read_excel(file.path(dir, file), skip = 3, col_names = F) %>%
-    select(1, 4:7, 17) %>%
-    # str_sub(문자열, 시작위치, 끝위치) : 연도 추출
-    mutate(연도 = str_sub(file, 1, 4))
-  landfill1 <- bind_rows(landfill1, temp)
-}
+landfill1 <- files %>%
+  map_dfr(~ {
+    data <- read_excel(.x, skip = 3, col_names = F) 
+    year <- str_sub(basename(.x), 1, 4) %>% as.integer()
+    data <- data %>% mutate(연도 = year, .before = 1) 
+  })
 ## *****************************************************************************
 
 
 ## 변수명 지정 및 데이터 정리
 landfill1 <- landfill1 %>%
+  select(연도, 2, 6:8, 18) %>%
   set_names(c(
-    "매립시설명", "시도", "시군", "법정동", "법정리", "가동유무", "연도"
+    "연도", "매립시설명", "시군", "법정동", "법정리", "가동유무"
   )) %>%
   # 단위유역 추가 및 연도 숫자로 변환
   left_join(landfill_a, by = c("매립시설명", "시군")) %>%
@@ -1023,92 +966,39 @@ for (i in 2014:2022) {
 
 
 ## *****  소계 계산  ***********************************************************
-# 유역별 합계
-landfill_count <- landfill_count %>%
-  bind_rows(landfill_count %>%
-    group_by(연도, 단위유역) %>%
-    summarise(시설수 = sum(시설수), .groups = "drop") %>%
-    mutate(시군 = "합계") %>%
-    select(연도, 단위유역, 시군, 시설수))
-
-# 시군별 합계
-landfill_count <- landfill_count %>%
-  bind_rows(landfill_count %>%
-    group_by(연도, 시군) %>%
-    summarise(시설수 = sum(시설수), .groups = "drop") %>%
-    mutate(단위유역 = "합계") %>%
-    select(연도, 단위유역, 시군, 시설수))
-
-## *****************************************************************************
+## 소계 계산, 단위유역/시군 순서 지정, 연도 기준 wide 포맷 변환
+landfill_count %<>% subtotal_1() %>% order_func(., "시설수")
 
 
-## 권역추가, 단위유역, 시군 순서 설정 및 각 연도를 열로 변경(wide 포맷)
-landfill_count <- landfill_count %>%
-  mutate(
-    단위유역 = factor(단위유역, levels = c(
-      "합계", "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A",
-      "섬강A", "섬강B", "북한A", "북한B", "소양A", "인북A", "소양B", "북한C",
-      "홍천A", "한탄A", "한강B", "제천A", "한강D", "북한D", "한탄B", "임진A",
-      "낙본A", "기타"
-    )),
-    시군 = factor(시군, levels = c(
-      "합계", "춘천시", "원주시", "강릉시", "태백시", "삼척시", "홍천군",
-      "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군",
-      "양구군", "인제군", "고성군", "동해시", "속초시", "양양군"
-    )),
-    권역 = case_when(
-      단위유역 == "골지A" | 단위유역 == "오대A" | 단위유역 == "주천A" |
-        단위유역 == "평창A" | 단위유역 == "옥동A" | 단위유역 == "한강A" ~ "남한강",
-      단위유역 == "섬강A" | 단위유역 == "섬강B" ~ "섬강",
-      단위유역 == "북한A" | 단위유역 == "북한B" | 단위유역 == "소양A" |
-        단위유역 == "인북A" | 단위유역 == "소양B" | 단위유역 == "북한C" ~ "북한강",
-      단위유역 == "홍천A" ~ "홍천강",
-      단위유역 == "한탄A" ~ "한탄강",
-      단위유역 == "한강B" | 단위유역 == "제천A" | 단위유역 == "한강D" ~ "충청북도",
-      단위유역 == "북한D" | 단위유역 == "한탄B" | 단위유역 == "임진A" ~ "경기도",
-      단위유역 == "낙본A" ~ "낙동강",
-      TRUE ~ "기타"
-    )
-  ) %>%
-  select(권역, everything()) %>%
-  # 각 연도를 열로 변경(wide 포맷)
-  pivot_wider(names_from = 연도, values_from = 시설수) %>%
-  arrange(단위유역, 시군)
-
-## 시군 기준 정리
-landfill_count_s <- landfill_count %>%
-  arrange(시군, 단위유역) %>%
-  select(시군, everything(), -권역) %>%
-  filter(시군 != "합계")
+## 권역 제외
+landfill_count_s <- landfill_count %>% select(-권역)
 
 
-## ______________________________________________________________________________
-landfill_count <- landfill_count %>% filter(단위유역 != "합계")
 
 
 ##### ===== 매립장 침출수 발생유량 =============================================
 
 ## *****  파일 불러오기  *******************************************************
 # 데이터 경로지정 및 데이터 목록
-dir <- ("전국오염원조사/매립계")
-files <- list.files(dir)
+files <- list.files(
+  path = "전국오염원조사/매립계",
+  pattern = "*.xls", full.names = T
+)
 
 # 데이터 불러오기 및 합치기
-landfill2 <- tibble()
-
-for (file in files) {
-  print(file)
-  temp <- read_excel(file.path(dir, file), sheet = 2, skip = 2, col_names = F) %>%
-    select(1, 4) %>%
-    mutate(연도 = str_sub(file, 1, 4)) # str_sub(문자열, 시작위치, 끝위치) : 연도 추출
-  landfill2 <- bind_rows(landfill2, temp)
-}
+landfill2 <- files %>%
+  map_dfr(~ {
+    data <- read_excel(.x, , sheet = 2, skip = 2, col_names = F) 
+    year <- str_sub(basename(.x), 1, 4) %>% as.integer()
+    data <- data %>% mutate(연도 = year, .before = 1) 
+  })
 ## *****************************************************************************
 
 
 ## 변수명 지정
 landfill2 %<>%
-  set_names(c("매립시설명", "발생유량", "연도"))
+  select(연도, 2, 5) %>%
+  set_names(c("연도", "매립시설명", "발생유량"))
 
 ## 침출수 발생유량 연평균 계산
 landfill_mean <- landfill2 %>%
@@ -1143,67 +1033,12 @@ landfill_sum <- landfill_sum %>% mutate_all(~ replace(., is.na(.), 0))
 
 
 ## *****  소계 계산  ***********************************************************
-# 유역별 합계
-landfill_sum <- landfill_sum %>%
-  bind_rows(landfill_sum %>%
-    group_by(연도, 단위유역) %>%
-    summarise(발생유량 = sum(발생유량), .groups = "drop") %>%
-    mutate(시군 = "합계") %>%
-    select(연도, 단위유역, 시군, 발생유량))
-
-# 시군별 합계
-landfill_sum <- landfill_sum %>%
-  bind_rows(landfill_sum %>%
-    group_by(연도, 시군) %>%
-    summarise(발생유량 = sum(발생유량), .groups = "drop") %>%
-    mutate(단위유역 = "합계") %>%
-    select(연도, 단위유역, 시군, 발생유량))
-
-## *****************************************************************************
+## 소계 계산, 단위유역/시군 순서 지정, 연도 기준 wide 포맷 변환
+landfill_sum %<>% subtotal_1() %>% order_func(., "발생유량")
 
 
-## 권역추가, 단위유역, 시군 순서 설정 및 각 연도를 열로 변경(wide 포맷)
-landfill_sum <- landfill_sum %>%
-  mutate(
-    단위유역 = factor(단위유역, levels = c(
-      "합계", "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A",
-      "섬강A", "섬강B", "북한A", "북한B", "소양A", "인북A", "소양B", "북한C",
-      "홍천A", "한탄A", "한강B", "제천A", "한강D", "북한D", "한탄B", "임진A",
-      "낙본A", "기타"
-    )),
-    시군 = factor(시군, levels = c(
-      "합계", "춘천시", "원주시", "강릉시", "태백시", "삼척시", "홍천군",
-      "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군",
-      "양구군", "인제군", "고성군", "동해시", "속초시", "양양군"
-    )),
-    권역 = case_when(
-      단위유역 == "골지A" | 단위유역 == "오대A" | 단위유역 == "주천A" |
-        단위유역 == "평창A" | 단위유역 == "옥동A" | 단위유역 == "한강A" ~ "남한강",
-      단위유역 == "섬강A" | 단위유역 == "섬강B" ~ "섬강",
-      단위유역 == "북한A" | 단위유역 == "북한B" | 단위유역 == "소양A" |
-        단위유역 == "인북A" | 단위유역 == "소양B" | 단위유역 == "북한C" ~ "북한강",
-      단위유역 == "홍천A" ~ "홍천강",
-      단위유역 == "한탄A" ~ "한탄강",
-      단위유역 == "한강B" | 단위유역 == "제천A" | 단위유역 == "한강D" ~ "충청북도",
-      단위유역 == "북한D" | 단위유역 == "한탄B" | 단위유역 == "임진A" ~ "경기도",
-      단위유역 == "낙본A" ~ "낙동강",
-      TRUE ~ "기타"
-    )
-  ) %>%
-  select(권역, everything()) %>%
-  # 각 연도를 열로 변경(wide 포맷)
-  pivot_wider(names_from = 연도, values_from = 발생유량) %>%
-  arrange(단위유역, 시군)
-
-## 시군 기준 정리
-landfill_sum_s <- landfill_sum %>%
-  arrange(시군, 단위유역) %>%
-  select(시군, everything(), -권역)
-# filter(시군 != "합계")
-
-
-## ______________________________________________________________________________
-landfill_sum <- landfill_sum %>% filter(단위유역 != "합계")
+## 권역 제외
+landfill_sum_s <- landfill_sum %>% select(-권역)
 
 
 
@@ -1283,13 +1118,13 @@ alldata_s %<>%
   ) %>%
   mutate(
     단위유역 = factor(단위유역, levels = c(
-      "합계", "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A",
+      "소계", "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A",
       "섬강A", "섬강B", "북한A", "북한B", "소양A", "인북A", "소양B", "북한C",
       "홍천A", "한탄A", "한강B", "제천A", "한강D", "북한D", "한탄B", "임진A",
       "낙본A", "기타"
     )),
     시군 = factor(시군, levels = c(
-      "합계", "춘천시", "원주시", "강릉시", "태백시", "삼척시", "홍천군",
+      "강원도", "춘천시", "원주시", "강릉시", "태백시", "삼척시", "홍천군",
       "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군",
       "양구군", "인제군", "고성군", "동해시", "속초시", "양양군"
     )),
@@ -1310,7 +1145,7 @@ alldata_s %<>%
 alldata_s1 <- alldata_s %>%
   filter(
     !시군 %in% c("동해시", "속초시", "양양군"),
-    !단위유역 %in% c("기타", "합계")
+    !단위유역 %in% c("기타", "소계")
   ) %>%
   # 기타수계 제외한 합계 재산성
   bind_rows(
@@ -1318,9 +1153,9 @@ alldata_s1 <- alldata_s %>%
       group_by(시군, 오염원, 분류) %>%
       summarise_at(vars(`2014`:`2022`), ~ sum(.)) %>%
       mutate(
-        단위유역 = "합계",
+        단위유역 = "소계",
         단위유역 = factor(단위유역, levels = c(
-          "합계", "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A",
+          "소계", "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A",
           "섬강A", "섬강B", "북한A", "북한B", "소양A", "인북A", "소양B", "북한C",
           "홍천A", "한탄A", "한강B", "제천A", "한강D", "북한D", "한탄B", "임진A",
           "낙본A", "기타"
@@ -1362,8 +1197,8 @@ alldata_s2 <- bind_rows(
 ## 시군기준 정리
 alldata_s2_시군 <- alldata_s1 %>%
   filter(
-    오염원 %in% c("생활계", "축산계", "산업계_폐수방류량", "양식계_시설면적"),
-    분류 %in% c("인구", "젖소", "한우", "돼지", "소계")
+    오염원 %in% c("생활계", "축산계", "산업계_폐수방류량"),
+    분류 %in% c("인구", "물사용량", "젖소", "한우", "돼지", "소계")
   ) %>%
   filter(오염원 != "축산계" | 분류 != "소계") %>%
   bind_rows(., alldata_s1 %>%
@@ -1371,12 +1206,12 @@ alldata_s2_시군 <- alldata_s1 %>%
     group_by(단위유역, 시군, 오염원) %>%
     summarise(across(c(`2014`:`2022`), ~ sum(.)), .groups = "drop") %>%
     mutate(분류 = "소계")) %>%
-  filter(단위유역 == "합계") %>%
-  select(시군, 오염원, 분류, `2022`) %>%
+  # filter(단위유역 == "합계") %>%
+  select(시군, 단위유역, 오염원, 분류, `2019`:`2022`) %>%
   mutate(오염원 = factor(오염원, levels = c(
-    "생활계", "축산계", "산업계_폐수방류량", "양식계_시설면적"
+    "생활계", "축산계", "산업계_폐수방류량"
   ))) %>%
-  arrange(시군, 오염원)
+  arrange(시군, 단위유역, 오염원)
 
 
 ###  엑셀 파일 내보내기_writexl

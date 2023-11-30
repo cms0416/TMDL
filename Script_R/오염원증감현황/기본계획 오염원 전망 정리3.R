@@ -18,7 +18,7 @@ prospect_s <- prospect %>%
     분류 != "가두리", 분류 != "지수식", 분류 != "유수식", 분류 != "대하",
     분류 != "0~10", 분류 != "10~100", 분류 != "100~1000", 분류 != "1000이상"
   ) %>%
-  filter(단위유역 != "북한D", 단위유역 != "임진A") %>% # 시행계획 수립 단위유역 제외
+  # filter(단위유역 != "북한D", 단위유역 != "임진A") %>% # 시행계획 수립 단위유역 제외
   select(시군, everything(), -시도)
 
 
@@ -30,7 +30,7 @@ prospect_s2 <- prospect_s %>%
   # 시군별 소계 계산
   group_by(시군, 오염원, 분류) %>% 
   group_modify(~ .x %>% adorn_totals(where = "row", name = "소계")) %>% 
-  select(시군, 단위유역, 오염원, 분류, `2017년`, `2020년`, `2025년`, `2030년`, `2022년`) %>% 
+  select(시군, 단위유역, 오염원, 분류, `2022년`, `2030년`) %>% 
   filter(시군 != "강원도" | 단위유역 != "소계") %>% 
   # 자료 순서 수질개선사업계획 양식 순서로 정리
   mutate(
@@ -58,19 +58,15 @@ prospect_s2 <- prospect_s %>%
 
 
 ## 파일 내보내기
-write_xlsx(prospect_s2, path = "오염원증감현황/Output/오염원 전망(시군별 정리).xlsx")
+# write_xlsx(prospect_s2, path = "오염원증감현황/Output/오염원 전망(시군별 정리).xlsx")
 
 
 
 #############################  계별 대표값 정리  #############################
-## 전국오염원조사자료 계별 대표값 불러오기
-data_1 <- read_excel("전국오염원조사/Output/전국오염원조사자료 계별 대표값 정리(시군기준).xlsx")
-
 
 ## 생활계, 축산계, 산업계 증감 현황 정리
 data_clean <- prospect_s2 %>% 
-  filter(오염원 %in% c("생활계", "산업계_폐수방류량", "양식계_시설면적"),
-         분류 != "물사용량") %>% 
+  filter(오염원 %in% c("생활계", "산업계_폐수방류량")) %>% 
   # 축산계 대표 축종(젖소, 한우, 돼지)만 정리
   bind_rows( 
     prospect_s2 %>% 
@@ -80,9 +76,9 @@ data_clean <- prospect_s2 %>%
     prospect_s2 %>% 
       filter(분류 %in% c("젖소", "한우", "돼지")) %>% 
       group_by(시군, 단위유역, 오염원) %>% 
-      summarise(across(c(`2017년`:`2022년`), ~ sum(.)), .groups = "drop") %>% 
+      summarise(across(c(`2022년`, `2030년`), ~ sum(.)), .groups = "drop") %>% 
       mutate(분류 = "소계")) %>%
-  filter(단위유역 %in% c("합계", "소계")) %>% 
+  # filter(단위유역 %in% c("합계", "소계")) %>% 
   mutate(
     시군 = factor(시군, levels = c(
       "강원도", "춘천시", "원주시", "강릉시", "태백시", "삼척시", "홍천군",
@@ -95,31 +91,42 @@ data_clean <- prospect_s2 %>%
       "한탄A", "한강B", "제천A", "한강D", "북한D", "한탄B", "임진A", "낙본A"
     )),
     오염원 = factor(오염원, levels = c(
-      "생활계", "축산계", "산업계_폐수방류량", "양식계_시설면적"
+      "생활계", "축산계", "산업계_폐수방류량"
     )),
     분류 = factor(분류, levels = c(
-      "인구", "젖소", "한우", "돼지", "소계"
+      "소계", "인구", "물사용량", "젖소", "한우", "돼지"
     ))
-    # 증감율 추가
-    # 증감율 = round((`2022` - `2030년`) / `2030년`, 4),
-    # 증감율 계산 값이 없거나 무한대인 경우 수정
-    # 증감율 = replace(증감율, is.infinite(증감율)|is.na(증감율), "-")
     ) %>% 
   relocate(단위유역, .after = 분류) %>% 
-  select(-단위유역) %>% 
-  arrange(시군, 오염원, 분류)
+  # select(-단위유역) %>% 
+  arrange(시군, 오염원, 분류, 단위유역) %>% 
+  filter(시군 != "강원도")
 
 
 
 ###########################  전망자료와 당해년도 자료 합치기  ##########################
 present <- read_excel("전국오염원조사/Output/전국오염원조사자료 계별 대표값 정리(시군기준).xlsx")
 
+present %<>% filter(시군 != "강원도") 
+
 data_join <- data_clean %>% 
-  left_join(present,  by = c("시군", "오염원", "분류"))
+  left_join(present,  by = c("시군", "단위유역", "오염원", "분류")) %>% 
+  relocate(c(`2022년`, `2030년`), .after = last_col()) %>% 
+  mutate(
+    # 증감율 추가
+    증감율 = round((`2022` - `2030년`) / `2030년`, 4),
+    # 증감율 계산 값이 없거나 무한대인 경우 수정
+    증감율 = replace(증감율, is.infinite(증감율)|is.na(증감율), "-"),
+    축산계확인 = ifelse(오염원 == "축산계" & 분류 == "소계", 
+                   ifelse(단위유역 == "소계", 1, 0)
+                     , 1)
+  ) %>% 
+  filter(축산계확인 == 1) %>% 
+  select(-축산계확인)
 
     
 ## 파일 내보내기
-write_xlsx(data_clean, path = "오염원증감현황/Output/오염원증감현황(시군기준).xlsx")
+write_xlsx(data_join, path = "오염원증감현황/Output/오염원_계별대표값_증감현황(시군기준).xlsx")
 write.csv(data_clean, "Output/Data/오염원증감현황(시군기준).csv", row.names=F, fileEncoding = 'cp949')
 
 

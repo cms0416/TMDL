@@ -1,13 +1,13 @@
 ### 전국오염원조사자료 검토용 물사용량 자료 편집
 waterusage2 <- waterusage %>%
-  group_by(연도, 시군구, 법정동, 법정리, 주소) %>%
+  group_by(연도, 시군, 법정동, 법정리, 주소) %>%
   summarise(across(c(가정용물사용합계, 영업용물사용합계, 물사용량), ~sum(.)), .groups = "drop")
 
 
 ### 2022년 통계인구 자료 정리(과학원 제공)
 통계인구 <- read_excel("전국오염원조사/2022년_통계인구_강원도.xlsx", skip = 4, col_names = T) %>% 
   mutate(동리 = ifelse(is.na(법정리), 법정동, 법정리),
-         주소 = str_c(시군구, 법정동, 동리, sep = " ")) %>% 
+         주소 = str_c(시군, 법정동, 동리, sep = " ")) %>% 
   select(주소, 인구_22년 = 총인구, 법정동, 동리)
 
 
@@ -28,7 +28,7 @@ waterusage2 <- waterusage %>%
 
 ### 시군별 현황 확인
 생활계_인구물사용량_시군 <- 생활계_인구물사용량 %>% 
-  group_by(시군구) %>% 
+  group_by(시군) %>% 
   summarise(across(c(인구_22년, 물사용량_22년), ~sum(.)))
 
 
