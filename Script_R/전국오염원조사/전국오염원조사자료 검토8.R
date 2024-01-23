@@ -655,7 +655,7 @@ landuse2 <- landuse %>%
   pivot_longer(cols = 전:교통지역, names_to = "지목", values_to = "면적")
 
 
-## 연도 및 동리 별 가정인구합계 정리
+## 연도 및 동리 별 지목 면적 정리
 landuse_total <- landuse2 %>%
   group_by(연도, 주소, 시군, 지목) %>%
   summarise(면적 = sum(면적), .groups = "drop")
@@ -1005,8 +1005,8 @@ landfill_mean <- landfill2 %>%
   mutate(across(c(연도, 발생유량), as.numeric)) %>%
   group_by(매립시설명, 연도) %>%
   summarise(발생유량 = round2(mean(발생유량), 1), .groups = "drop") %>%
-  mutate_all(~ replace(., is.na(.), 0)) %>%
-  mutate(시설수 = 1)
+  mutate_all(~ replace(., is.na(.), 0))
+  # mutate(시설수 = 1)
 
 ## 침출수 발생유량 자료에 시군, 단위유역 추가
 landfill_mean <- landfill_mean %>%

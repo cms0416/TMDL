@@ -236,7 +236,7 @@ df %>% group_by(var1)          # var1이 같은 행끼리 그룹화
 df %>% group_by(var1, var2)    # var1, var2가 모두 같은 행끼리 그룹화
 
 # ++ tally() : 각 그룹에 속하는 행의 개수 -----
-df %>% group_by(var1) %>% tally() # var1로 구분된 각 그룹의 데이터의 수를 반환
+df %>% group_by(var1) %>% tally(name = "개수") # var1로 구분된 각 그룹의 데이터의 수를 반환
 
 # 변수 추가해서 그룹 세분화 : .add=TRUE를 지정하지 않은 경우 그룹 변수가 새로운 변수로 대체
 df %>% group_by(var1) %>% group_by(var2, .add = TRUE)
@@ -582,6 +582,14 @@ str_glue(..., .sep = "", .envir = parent.frame())
 str_glue_data(.x, ..., .sep = "", .envir =
                 parent.frame(), .na = "NA")
 
+
+
+# ========== ▶ 그래프 관련 ◀ ===================================================
+# └ 그래프용 Noto Sans KR 폰트 추가 -----
+library(showtext)
+
+font_add_google('Noto Sans KR', 'notosanskr')
+showtext_auto()
 
 
 # ========== ▶ 기타 ◀ ==========================================================

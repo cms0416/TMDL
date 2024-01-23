@@ -6,7 +6,7 @@ devtools::install_github("DesiQuintans/librarian")
 ### 주요 패키지
 pkg <- c(
   "tidyverse", "data.table", "ggthemes", "writexl", "openxlsx",
-  "extrafont", "rvest", "RSelenium", "seleniumPipes", "styler", 
+  "showtext", "rvest", "RSelenium", "seleniumPipes", "styler", 
   "remotes", "progress", "datapasta", "sf", "sp", "janitor", "gt"
 )
 
@@ -20,7 +20,7 @@ library(data.table)
 library(ggthemes)
 library(writexl)
 library(openxlsx)
-library(extrafont)
+library(showtext)  # 그래프 구글 폰트 적용
 library(rvest)
 library(RSelenium)
 library(seleniumPipes)
@@ -32,6 +32,7 @@ library(sf)  # GIS 관련
 library(sp)  # GIS 관련
 library(janitor)  # 데이터 분석 도구
 library(gt)  # 표 꾸미기
+# library(extrafont)
 
 shelf("tidyverse", "data.table", "ggthemes", "writexl", "extrafont", "rvest", 
       "RSelenium", "seleniumPipes", "styler", "remotes", "progress", "sf", "sp",

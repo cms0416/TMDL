@@ -1,4 +1,4 @@
-#####  라이브러리 로드  ########################################################
+##########  라이브러리 로드  ###################################################
 library(tidyverse)
 library(readxl)
 library(writexl)
@@ -21,6 +21,7 @@ obs <- obs %>%
 ### 평가 연도 범위 설정(평가 시작 년도 +2)
 years <- 2016:2023
 
+
 ##########  연평균 산정  #######################################################
 
 ## 연평균 산정 함수 정의
@@ -41,6 +42,7 @@ calculate_mean <- function(data, var_name) {
     summarise(mean_value = round2(mean({{ var_name }}, na.rm = TRUE), dp), .groups = "drop") %>%
     pivot_wider(names_from = 연도, values_from = mean_value)
 }
+
 
 ## 각 항목별 연평균 산정
 BOD_ymean <- calculate_mean(obs, BOD)
@@ -141,6 +143,7 @@ calculate_mean <- function(data, var_name, i) {
     rename_with(~ str_c(i - 2002, "~", i - 2000), value)
 }
 
+
 ## 각 항목별 평가수질 산정
 BOD_assessment <- years %>%
   map(~calculate_mean(obs, BOD, .)) %>%
@@ -184,10 +187,12 @@ bind_files <- function(name) {
     arrange(총량지점명)
 }
 
+
 ## 각 항목별 전체 자료 합치기
 BOD_total <- bind_files(BOD)
 TP_total <- bind_files(TP)
 TOC_total <- bind_files(TOC)
+
 
 ## BOD, TP 표 하나에 정리(업무보고 양식)
 BOD_TP_total <- BOD_total %>% 
@@ -215,6 +220,7 @@ write_xlsx(
   ),
   path = "수질 분석/Output/강원도 수질현황.xlsx"
 )
+
 
 ## 한강수계 전체 자료 내보내기
 write_xlsx(list("BOD" = BOD_total, "TP" = TP_total, "TOC" = TOC_total),
