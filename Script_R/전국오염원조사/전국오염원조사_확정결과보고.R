@@ -303,12 +303,17 @@ files <- list.files(
   group_by(연도, 시군, 지목) %>%
   summarise(면적 = sum(면적), .groups = "drop") %>% 
   subtotal_2(., "지목") %>% 
+  mutate(면적 = round(면적 / (10^6))) %>% 
+  pivot_wider(names_from = 지목, values_from = 면적) %>% 
+  mutate(총면적 = 합계) %>% 
+  pivot_longer(cols = 합계:기타, names_to = "지목", values_to = "면적") %>% 
   mutate(
-    면적 = round(면적 / (10^6), 2),
+    비율 = round(면적/총면적*100),
     지목 = factor(지목, levels = c(
-    "합계", "전", "답", "임야", "대지", "기타"
-  ))) %>% 
+      "합계", "전", "답", "임야", "대지", "기타"
+    ))) %>% 
   order_func(., "지목")
+
 
 
 ##**************************************************************************** ##
@@ -953,11 +958,127 @@ files <- list.files(
   ggplot(aes(x = reorder(시군, -폐수량), y = 폐수량, fill = 구분)) +
   geom_bar(position = position_dodge(0.8),
            stat='identity', width = 0.7) +
-
-  # geom_text(aes(label = comma(폐수량)), size = 3.5, vjust = -0.5, 
-  #           color = "black", check_overlap = TRUE) +
   scale_y_continuous(name = "폐수 발생·방류량(톤/일)", breaks = seq(0, 100000, by = 10000), 
                      limits = c(0, 70000), labels = scales::comma) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+
+#_______________________________________________________________________________
+
+
+## 그래프_토지계_시군별 지목 면적 -----
+토지계_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(연도 == 2021, 시군 != "강원도", 지목 != "합계") %>% 
+  # "시", "군" 삭제
+  mutate(시군 = str_remove(시군, "(시|군)")) %>% 
+  ggplot(aes(x = reorder(시군, -면적), y = 면적, fill = 지목)) +
+  geom_bar(stat='identity', width = 0.7) +
+  scale_y_continuous(name = "토지면적(㎢)", breaks = seq(0, 100000, by = 500), 
+                     limits = c(0, 1800), labels = scales::comma) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+
+## 그래프_토지계_연도추이 -----
+토지계_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(시군 == "강원도", 지목 != "합계") %>% 
+  ggplot(aes(x = 연도, y = 면적, fill = 지목)) +
+  geom_bar(stat='identity', width = 0.7) +
+  geom_text(aes(label =str_c(comma(면적), "(", 비율, "%)")), size = 3, 
+            position = position_stack(vjust = 0.5),
+            color = "black", check_overlap = TRUE) +
+  geom_text(aes(y = 총면적, label = comma(총면적)), size = 3.5, vjust = -0.5,
+            check_overlap = TRUE) +
+  scale_x_continuous(breaks = seq(0, 10000, 1)) +
+  scale_y_continuous(name = "토지면적(㎢)", breaks = seq(0, 100000, by = 5000), 
+                     limits = c(0, 18000), labels = scales::comma) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+
+#_______________________________________________________________________________
+
+
+## 그래프_양식계_연도추이 -----
+양식계_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(시군 == "강원도", 종류 != "합계") %>% 
+  ggplot(aes(x = 연도, y = 양식장수, fill = 종류)) +
+  geom_bar(stat='identity', width = 0.7) +
+  geom_text(aes(label =comma(양식장수)), size = 3.5, 
+            position = position_stack(vjust = 0.5),
+            color = "black", check_overlap = TRUE) +
+  scale_x_continuous(breaks = seq(0, 10000, 1)) +
+  scale_y_continuous(name = "양식장수(개소)", breaks = seq(0, 100000, by = 50), 
+                     limits = c(0, 200), labels = scales::comma) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+
+## 그래프_양식계_시군별 양식자 수 -----
+양식계_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(연도 == 2021, 시군 != "강원도", 종류 != "합계") %>% 
+  # "시", "군" 삭제
+  mutate(시군 = str_remove(시군, "(시|군)")) %>% 
+  ggplot(aes(x = reorder(시군, -양식장수, FUN = sum), y = 양식장수, fill = 종류)) +
+  geom_bar(stat='identity', width = 0.7) +
+  geom_text(aes(label =comma(양식장수)), size = 3.5, 
+            position = position_stack(vjust = 0.5),
+            color = "black", check_overlap = TRUE) +
+  scale_y_continuous(name = "양식장수(개소)", breaks = seq(0, 100000, by = 10), 
+                     limits = c(0, 40), labels = scales::comma) +
   theme_calc(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
