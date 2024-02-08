@@ -543,7 +543,7 @@ files <- list.files(
 ###################################  그래프  ###################################
 ##**************************************************************************** ##
 
-## 그래프_생활계_지역별인구현황
+## 그래프_생활계_지역별인구현황 -----
 인구_total %>% 
   # 연도 선택 및 도전체 합계 삭제
   filter(연도 == 2021, 시군 != "강원도") %>% 
@@ -566,30 +566,7 @@ files <- list.files(
     legend.position = "none")
 
 
-## 그래프_생활계_지역별처리율
-인구_total %>% 
-  # 연도 선택 및 도전체 합계 삭제
-  filter(연도 == 2021, 시군 != "강원도") %>% 
-  # "시", "군" 삭제
-  mutate(시군 = str_remove(시군, "(시|군)")) %>% 
-  ggplot(aes(x = 시군, y = 처리율, fill = 시군)) +
-  geom_bar(stat='identity') +
-  geom_text(aes(label = str_c(처리율, "%")), vjust = 1.5,
-            position = position_dodge(0.9), size = 4)+
-  scale_x_discrete(limits = c("춘천", "원주", "강릉", "동해", "태백", "속초",
-                              "삼척", "홍천", "횡성", "영월", "평창", "정선",
-                              "철원", "화천", "양구", "인제", "고성", "양양")) +
-  scale_y_continuous(name = "처리율(%)", breaks = seq(0, 100, by=20)) +
-  theme_classic() +
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
-    axis.text.x = element_text(size = 12, color = "black"),
-    axis.text.y = element_text(size = 12, color = "black"),
-    legend.position = "none")
-
-
-## 그래프_생활계_지역별처리인구현황
+## 그래프_생활계_지역별처리인구현황 -----
 인구_처리 %>% 
   # 연도 선택 및 도전체 합계 삭제
   filter(연도 == 2021, 시군 != "강원도", 구분 != "총인구") %>% 
@@ -620,17 +597,17 @@ files <- list.files(
   )
 
 
-## 그래프_생활계_연도별인구변화
+## 그래프_생활계_연도별인구변화 -----
 인구_처리 %>% 
-  # 연도 선택 및 도전체 합계 삭제
   filter(시군 == "강원도") %>% 
   ggplot(aes(x = 연도, y = 인구 * 0.001, color = 구분)) +
-  geom_line(stat='identity', linewidth = 0.3) +
-  geom_point(stat='identity', size = 0.5) +
-  geom_text(aes(label = round(인구 * 0.001)), size = 4, vjust = -0.5, 
+  geom_line(stat='identity', linewidth = 0.8) +
+  geom_point(stat='identity', size = 2) +
+  geom_text(aes(label = comma(round(인구 * 0.001))), size = 3.5, vjust = -0.5, 
             color = "black", check_overlap = TRUE) +
   scale_x_continuous(breaks = seq(0, 10000, 1)) +
-  scale_y_continuous(name = "인구(천명)", breaks = seq(0, 1800, by = 400), limits = c(0, 1800)) +
+  scale_y_continuous(name = "인구(천명)", breaks = seq(0, 1800, by = 400), 
+                     limits = c(0, 1800), labels = scales::comma) +
   theme_calc(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
@@ -646,4 +623,352 @@ files <- list.files(
     legend.direction = "horizontal"
   )
 
-ggsave(filename = "생활계_연도별인구변화.png", path ="전국오염원조사/output/plot", scale = 1.5, width = 780, height = 300, dpi = 300, units = "px")
+#_______________________________________________________________________________
+
+## 그래프_축산계_가축사육두수변화 -----
+축산계_total %>% 
+  filter(시군 == "강원도", 축종 %in% c("합계", "한우", "젖소", "돼지", "가금")) %>% 
+  ggplot() +
+  geom_bar(data = . %>% filter(축종 == "합계"), 
+           aes(x = 연도, y = 사육두수 * 0.00009, fill = "총 사육두수"), 
+           stat='identity', width = 0.7) +
+  geom_line(data = . %>% filter(축종 == "가금"),
+            aes(x = 연도, y = 사육두수 * 0.00009, color = 축종), 
+            stat='identity', linewidth = 0.8) +
+  geom_point(data = . %>% filter(축종 == "가금"), 
+             aes(x = 연도, y = 사육두수 * 0.00009, color = 축종), 
+             stat='identity', size = 2) +
+  geom_line(data = . %>% filter(축종 %in% c("한우", "젖소", "돼지")),
+            aes(x = 연도, y = 사육두수 * 0.001, color = 축종), 
+            stat='identity', linewidth = 0.8) +
+  geom_point(data = . %>% filter(축종 %in% c("한우", "젖소", "돼지")), 
+             aes(x = 연도, y = 사육두수 * 0.001, color = 축종), 
+             stat='identity', size = 2) +
+  geom_text(data = . %>% filter(축종 == "합계"),
+            aes(x = 연도, y = 사육두수 * 0.00009, 
+                label = comma(round(사육두수 * 0.001))), 
+            size = 3.5, vjust = -0.5, 
+            color = "black", check_overlap = TRUE) +
+  geom_text(data = . %>% filter(축종 == "가금"),
+            aes(x = 연도, y = 사육두수 * 0.00009, 
+                label = comma(round(사육두수 * 0.001))), 
+            size = 3.5, vjust = 1.3, 
+            color = "black", check_overlap = TRUE) +
+  geom_text(data = . %>% filter(축종 %in% c("한우", "젖소", "돼지")),
+            aes(x = 연도, y = 사육두수 * 0.001, 
+                label = comma(round(사육두수 * 0.001))), 
+            size = 3.5, vjust = -0.5, 
+            color = "black", check_overlap = TRUE) +
+  scale_fill_manual(values = c("총 사육두수" = "wheat"), breaks = "총 사육두수") +
+  scale_color_manual(values = c("한우" = "red", "젖소" = "mediumblue", 
+                                "돼지" = "darkgreen", "가금" = "darkviolet"),
+                     breaks = c("한우", "젖소", "돼지", "가금")) +
+  scale_x_continuous(breaks = seq(0, 10000, 1)) +
+  scale_y_continuous(name = "한우, 젖소, 돼지(천두)", 
+                     breaks = seq(0, 1200, by = 200), limits = c(0, 1200),
+                     labels = scales::comma,
+                     sec.axis = sec_axis(~./0.09, name = "총 사육두수, 가금(천두)", 
+                                         labels = scales::comma)) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+## 그래프_축산계_농가수변화 -----
+축산계_total %>% 
+  filter(시군 == "강원도", 축종 %in% c("합계", "한우", "젖소", "돼지", "가금")) %>% 
+  ggplot() +
+  geom_bar(data = . %>% filter(축종 == "합계"), 
+           aes(x = 연도, y = 농가수/2, fill = "총 농가수"), 
+           stat='identity', width = 0.7) +
+  geom_line(data = . %>% filter(축종 == "한우"),
+            aes(x = 연도, y = 농가수/2, color = 축종), 
+            stat='identity', linewidth = 0.8) +
+  geom_point(data = . %>% filter(축종 == "한우"), 
+             aes(x = 연도, y = 농가수/2, color = 축종), 
+             stat='identity', size = 2) +
+  geom_line(data = . %>% filter(축종 %in% c("젖소", "돼지", "가금")),
+            aes(x = 연도, y = 농가수, color = 축종), 
+            stat='identity', linewidth = 0.8) +
+  geom_point(data = . %>% filter(축종 %in% c("젖소", "돼지", "가금")), 
+             aes(x = 연도, y = 농가수, color = 축종), 
+             stat='identity', size = 2) +
+  geom_text(data = . %>% filter(축종 == "합계"),
+            aes(x = 연도, y = 농가수/2, label = comma(농가수)), 
+            size = 3.5, vjust = -0.5, 
+            color = "black", check_overlap = TRUE) +
+  geom_text(data = . %>% filter(축종 == "한우"),
+            aes(x = 연도, y = 농가수/2, label = comma(농가수)), 
+            size = 3.5, vjust = 1.3, 
+            color = "black", check_overlap = TRUE) +
+  geom_text(data = . %>% filter(축종 %in% c("젖소", "가금")),
+            aes(x = 연도, y = 농가수, label = comma(농가수)), 
+            size = 3.5, vjust = -0.5, 
+            color = "black", check_overlap = TRUE) +
+  geom_text(data = . %>% filter(축종 == "돼지"),
+            aes(x = 연도, y = 농가수, label = comma(농가수)), 
+            size = 3.5, vjust = 1.5, 
+            color = "black", check_overlap = TRUE) +
+  scale_fill_manual(values = c("총 농가수" = "wheat"), breaks = "총 농가수") +
+  scale_color_manual(values = c("한우" = "red", "젖소" = "mediumblue", 
+                                "돼지" = "darkgreen", "가금" = "darkviolet"),
+                     breaks = c("한우", "젖소", "돼지", "가금")) +
+  scale_x_continuous(breaks = seq(0, 10000, 1)) +
+  scale_y_continuous(name = "젖소, 돼지, 가금(호)", 
+                     breaks = seq(0, 10000, by = 1000), limits = c(0, 8000),
+                     labels = scales::comma,
+                     sec.axis = sec_axis(~.*2, name = "총 농가수, 한우(호)", 
+                                         labels = scales::comma)) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+
+## 그래프_축산계_시군별 한우 사육두수 -----
+축산계_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(연도 == 2021, 시군 != "강원도", 축종 == "한우") %>% 
+  # "시", "군" 삭제
+  mutate(시군 = str_remove(시군, "(시|군)")) %>% 
+  ggplot(aes(x = reorder(시군, -사육두수), y = 사육두수)) +
+  geom_bar(stat='identity', fill = "deepskyblue3", width = 0.7) +
+  geom_text(aes(label = comma(사육두수)), size = 3.5, vjust = -0.5, 
+            color = "black", check_overlap = TRUE) +
+
+  scale_y_continuous(name = "사육두수", breaks = seq(0, 100000, by = 10000), 
+                     limits = c(0, 70000), labels = scales::comma) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+## 그래프_축산계_시군별 젖소 사육두수 -----
+축산계_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(연도 == 2021, 시군 != "강원도", 축종 == "젖소") %>% 
+  # "시", "군" 삭제
+  mutate(시군 = str_remove(시군, "(시|군)")) %>% 
+  ggplot(aes(x = reorder(시군, -사육두수), y = 사육두수)) +
+  geom_bar(stat='identity', fill = "deepskyblue3", width = 0.7) +
+  geom_text(aes(label = comma(사육두수)), size = 3.5, vjust = -0.5, 
+            color = "black", check_overlap = TRUE) +
+  
+  scale_y_continuous(name = "사육두수", breaks = seq(0, 100000, by = 2000), 
+                     limits = c(0, 14000), labels = scales::comma) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+## 그래프_축산계_시군별 돼지 사육두수 -----
+축산계_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(연도 == 2021, 시군 != "강원도", 축종 == "돼지") %>% 
+  # "시", "군" 삭제
+  mutate(시군 = str_remove(시군, "(시|군)")) %>% 
+  ggplot(aes(x = reorder(시군, -사육두수), y = 사육두수)) +
+  geom_bar(stat='identity', fill = "deepskyblue3", width = 0.7) +
+  geom_text(aes(label = comma(사육두수)), size = 3.5, vjust = -0.5, 
+            color = "black", check_overlap = TRUE) +
+  
+  scale_y_continuous(name = "사육두수", breaks = seq(0, 1000000, by = 20000), 
+                     limits = c(0, 160000), labels = scales::comma) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+
+## 그래프_축산계_시군별 가금 사육두수 -----
+축산계_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(연도 == 2021, 시군 != "강원도", 축종 == "가금") %>% 
+  # "시", "군" 삭제
+  mutate(시군 = str_remove(시군, "(시|군)")) %>% 
+  ggplot(aes(x = reorder(시군, -사육두수*0.0001), y = 사육두수*0.0001)) +
+  geom_bar(stat='identity', fill = "deepskyblue3", width = 0.7) +
+  geom_text(aes(label = comma(사육두수*0.0001)), size = 3.5, vjust = -0.5, 
+            color = "black", check_overlap = TRUE) +
+  
+  scale_y_continuous(name = "사육두수(만두)", breaks = seq(0, 10000, by = 20), 
+                     limits = c(0, 200), labels = scales::comma) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+
+#_______________________________________________________________________________
+
+
+## 그래프_산업계_연도추이 -----
+산업계_total %>% 
+  filter(시군 == "강원도", 규모 == "합계") %>% 
+  ggplot() +
+  geom_line(aes(x = 연도, y = 업소수, color = "업소수"), 
+            stat='identity', linewidth = 0.8) +
+  geom_point(aes(x = 연도, y = 업소수, color = "업소수"), 
+             stat='identity', size = 2) +
+  geom_line(aes(x = 연도, y = 폐수발생량/120, color = "폐수발생량"), 
+            stat='identity', linewidth = 0.8) +
+  geom_point(aes(x = 연도, y = 폐수발생량/120, color = "폐수발생량"), 
+             stat='identity', size = 2) +
+  geom_line(aes(x = 연도, y = 폐수방류량/120, color = "폐수방류량"), 
+            stat='identity', linewidth = 0.8) +
+  geom_point(aes(x = 연도, y = 폐수방류량/120, color = "폐수방류량"), 
+             stat='identity', size = 2) +
+  geom_text(aes(x = 연도, y = 업소수, label = comma(업소수)), 
+            size = 3.5, vjust = -0.8, 
+            color = "black", check_overlap = TRUE) +
+  geom_text(aes(x = 연도, y = 폐수발생량/120, label = comma(폐수발생량/1000)), 
+            size = 3.5, vjust = 1.8, 
+            color = "black", check_overlap = TRUE) +
+  geom_text(aes(x = 연도, y = 폐수방류량/120, label = comma(폐수방류량/1000)), 
+            size = 3.5, vjust = 1.8, 
+            color = "black", check_overlap = TRUE) +
+  scale_color_manual(values = c("업소수" = "red", "폐수발생량" = "mediumblue", 
+                                "폐수방류량" = "darkgreen"),
+                     breaks = c("업소수", "폐수발생량", "폐수방류량")) +
+  scale_x_continuous(breaks = seq(0, 10000, 1)) +
+  scale_y_continuous(name = "업소수(개소)", 
+                     breaks = seq(0, 10000, by = 500), limits = c(0, 2500),
+                     labels = scales::comma,
+                     sec.axis = sec_axis(~./10, name = "폐수 발생·방류량(천톤/일)", 
+                                         labels = scales::comma)) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+
+## 그래프_산업계_시군별 업소수 -----
+산업계_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(연도 == 2021, 시군 != "강원도", 규모 == "합계") %>% 
+  # "시", "군" 삭제
+  mutate(시군 = str_remove(시군, "(시|군)")) %>% 
+  ggplot(aes(x = reorder(시군, -업소수), y = 업소수)) +
+  geom_bar(stat='identity', fill = "deepskyblue3", width = 0.7) +
+  geom_text(aes(label = comma(업소수)), size = 3.5, vjust = -0.5, 
+            color = "black", check_overlap = TRUE) +
+  scale_y_continuous(name = "업소수", breaks = seq(0, 100000, by = 50), 
+                     limits = c(0, 400), labels = scales::comma) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+## 그래프_산업계_시군별 폐수 발생, 방류량 -----
+산업계_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(연도 == 2021, 시군 != "강원도", 규모 == "합계") %>% 
+  pivot_longer(
+    cols = 폐수발생량:폐수방류량,
+    names_to = "구분",   
+    values_to = "폐수량"
+  ) %>% 
+  # "시", "군" 삭제
+  mutate(시군 = str_remove(시군, "(시|군)")) %>% 
+  ggplot(aes(x = reorder(시군, -폐수량), y = 폐수량, fill = 구분)) +
+  geom_bar(position = position_dodge(0.8),
+           stat='identity', width = 0.7) +
+
+  # geom_text(aes(label = comma(폐수량)), size = 3.5, vjust = -0.5, 
+  #           color = "black", check_overlap = TRUE) +
+  scale_y_continuous(name = "폐수 발생·방류량(톤/일)", breaks = seq(0, 100000, by = 10000), 
+                     limits = c(0, 70000), labels = scales::comma) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
