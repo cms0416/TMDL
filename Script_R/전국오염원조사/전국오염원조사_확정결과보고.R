@@ -184,6 +184,9 @@ files <- list.files(
   order_func(., "축종")
 
 
+write_xlsx(축산계_정리,
+  path = "전국오염원조사/Output/축산계_현황.xlsx"
+)
 
 ##**************************************************************************** ##
 ###################################  산업계  ###################################
@@ -429,7 +432,8 @@ files <- list.files(
   mutate_all(~ replace(., is.na(.), 0)) %>% 
   mutate(종류 = "매립장", .after = 연도) %>% 
   left_join(매립계_현황 %>% select(연도, 시설명, 시설코드, 시군),
-            by = c("연도", "시설명", "시설코드"))
+            by = c("연도", "시설명", "시설코드")) %>% 
+  filter(!is.na(시군))
 
 
 
@@ -1044,7 +1048,7 @@ files <- list.files(
   filter(시군 == "강원도", 종류 != "합계") %>% 
   ggplot(aes(x = 연도, y = 양식장수, fill = 종류)) +
   geom_bar(stat='identity', width = 0.7) +
-  geom_text(aes(label =comma(양식장수)), size = 3.5, 
+  geom_text(aes(label = comma(양식장수)), size = 3.5, 
             position = position_stack(vjust = 0.5),
             color = "black", check_overlap = TRUE) +
   scale_x_continuous(breaks = seq(0, 10000, 1)) +
@@ -1066,7 +1070,7 @@ files <- list.files(
   )
 
 
-## 그래프_양식계_시군별 양식자 수 -----
+## 그래프_양식계_시군별 양식장 수 -----
 양식계_total %>% 
   # 연도 선택 및 도전체 합계 삭제
   filter(연도 == 2021, 시군 != "강원도", 종류 != "합계") %>% 
@@ -1093,3 +1097,194 @@ files <- list.files(
     legend.position = "top",
     legend.direction = "horizontal"
   )
+
+
+#_______________________________________________________________________________
+
+
+## 그래프_환경기초시설_시설수 연도추이 -----
+환경기초시설_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(시군 == "강원도", 종류 != "합계") %>% 
+  ggplot(aes(x = 연도, y = 시설수, fill = 종류)) +
+  geom_bar(stat='identity', width = 0.7) +
+  geom_text(aes(label =comma(시설수)), size = 3.5, 
+            position = position_stack(vjust = 0.5),
+            color = "black", check_overlap = TRUE) +
+  scale_x_continuous(breaks = seq(0, 10000, 1)) +
+  scale_y_continuous(name = "시설수(개소)", breaks = seq(0, 100000, by = 100), 
+                     limits = c(0, 500), labels = scales::comma) +
+  scale_fill_manual(values = c("공공하수" = "tomato", "소규모하수" = "orange", "공공폐수" = "deepskyblue",
+                               "분뇨(생활가축)" = "green", "매립장" = "violet"),
+                    labels = c("공공하수", "소규모하수", "공공폐수", "분뇨(생활가축)", "매립장")) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+
+## 그래프_환경기초시설_처리량 연도추이 -----
+환경기초시설_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(시군 == "강원도", 종류 != "합계") %>% 
+  ggplot(aes(x = 연도, y = 처리량, fill = 종류)) +
+  geom_line(data = . %>% filter(종류 == "공공하수"),
+            aes(y = 처리량/11, color = 종류), 
+            stat='identity', linewidth = 0.8) +
+  geom_point(data = . %>% filter(종류 == "공공하수"),
+            aes(y = 처리량/11, color = 종류), 
+            stat='identity', size = 2) +
+  geom_text(data = . %>% filter(종류 == "공공하수"),
+            aes(y = 처리량/11, label =comma(처리량)), 
+            size = 3.5, vjust = -0.5,
+            color = "black", check_overlap = TRUE) +
+  
+  geom_bar(data = . %>% filter(종류 != "공공하수"), 
+           stat='identity', width = 0.7) +
+  geom_text(data = . %>% filter(종류 != "공공하수"),
+            aes(label =comma(처리량)), size = 3.5,
+            position = position_stack(vjust = 0.5),
+            color = "black", check_overlap = TRUE) +
+  
+  scale_x_continuous(breaks = seq(0, 10000, 1)) +
+  scale_y_continuous(name = "처리량(톤/일)", breaks = seq(0, 100000, by = 10000), 
+                     limits = c(0, 60000), labels = scales::comma,
+                     sec.axis = sec_axis(~.*11, name = "공공하수처리량(톤/일)", 
+                                         labels = scales::comma)) +
+  scale_fill_manual(values = c("소규모하수" = "orange", "공공폐수" = "deepskyblue",
+                               "분뇨(생활가축)" = "green", "매립장" = "violet"),
+                    labels = c("소규모하수", "공공폐수", "분뇨(생활가축)", "매립장")) +
+
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+
+## 그래프_환경기초시설_시군별 시설수 -----
+환경기초시설_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(연도 == 2021, 시군 != "강원도", 종류 != "합계") %>% 
+  # "시", "군" 삭제
+  mutate(시군 = str_remove(시군, "(시|군)")) %>% 
+  ggplot(aes(x = reorder(시군, -시설수, FUN = sum), y = 시설수, fill = 종류)) +
+  geom_bar(stat='identity', width = 0.7) +
+  geom_text(aes(label =comma(시설수)), size = 3.5, 
+            position = position_stack(vjust = 0.5),
+            color = "black", check_overlap = TRUE) +
+  scale_y_continuous(name = "시설수(개소)", breaks = seq(0, 100000, by = 10), 
+                     limits = c(0, 50), labels = scales::comma) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+
+## 그래프_환경기초시설_시군별 처리량 -----
+환경기초시설_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(연도 == 2021, 시군 != "강원도", 종류 != "합계") %>% 
+  # "시", "군" 삭제
+  mutate(시군 = str_remove(시군, "(시|군)")) %>% 
+  ggplot(aes(x = reorder(시군, -처리량/1000, FUN = sum), y = 처리량/1000, fill = 종류)) +
+  geom_bar(stat='identity', width = 0.7) +
+  geom_text(aes(label =comma(round(처리량/1000))), size = 3.5, 
+            position = position_stack(vjust = 0.5),
+            color = "black", check_overlap = TRUE) +
+  scale_y_continuous(name = "처리량(톤/일)", breaks = seq(0, 1000000, by = 20), 
+                     limits = c(0, 160), labels = scales::comma) +
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+
+## 그래프_환경기초시설_처리량  -----
+환경기초시설_total %>% 
+  # 연도 선택 및 도전체 합계 삭제
+  filter(연도 == 2021, 시군 != "강원도", 종류 != "합계") %>% 
+  # "시", "군" 삭제
+  mutate(시군 = str_remove(시군, "(시|군)")) %>% 
+  ggplot(aes(x = reorder(시군, -처리량/1000, FUN = sum), y = 처리량/1000, fill = 종류))
+  geom_line(data = . %>% filter(종류 == "공공하수"),
+            aes(y = 처리량/11, color = 종류), 
+            stat='identity', linewidth = 0.8) +
+  geom_point(data = . %>% filter(종류 == "공공하수"),
+             aes(y = 처리량/11, color = 종류), 
+             stat='identity', size = 2) +
+  geom_text(data = . %>% filter(종류 == "공공하수"),
+            aes(y = 처리량/11, label =comma(처리량)), 
+            size = 3.5, vjust = -0.5,
+            color = "black", check_overlap = TRUE) +
+  
+  geom_bar(data = . %>% filter(종류 != "공공하수"), 
+           stat='identity', width = 0.7) +
+  geom_text(data = . %>% filter(종류 != "공공하수"),
+            aes(label =comma(처리량)), size = 3.5,
+            position = position_stack(vjust = 0.5),
+            color = "black", check_overlap = TRUE) +
+  
+  scale_x_continuous(breaks = seq(0, 10000, 1)) +
+  scale_y_continuous(name = "처리량(톤/일)", breaks = seq(0, 100000, by = 10000), 
+                     limits = c(0, 60000), labels = scales::comma,
+                     sec.axis = sec_axis(~.*11, name = "공공하수처리량(톤/일)", 
+                                         labels = scales::comma)) +
+  scale_fill_manual(values = c("소규모하수" = "orange", "공공폐수" = "deepskyblue",
+                               "분뇨(생활가축)" = "green", "매립장" = "violet"),
+                    labels = c("소규모하수", "공공폐수", "분뇨(생활가축)", "매립장")) +
+  
+  theme_calc(base_family = "notosanskr") +
+  theme(
+    line = element_line(linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 11, color = "black"),
+    axis.text.y = element_text(size = 11, color = "black"),
+    axis.ticks.x.top = element_line(),
+    axis.ticks.y.right = element_line(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+

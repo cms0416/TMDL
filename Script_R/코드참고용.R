@@ -13,6 +13,10 @@ library(writexl)
 df <- read_excel("AAA/BBB/data.xlsx", sheet = 2, skip = 5, col_names = F, 
                  guess_max = Inf)
 
+# 특정 행 또는 열만 불러오기
+df <- read_excel("AAA/BBB/data.xlsx", range = cell_rows(102:151), col_names = FALSE)
+df <- read_excel("AAA/BBB/data.xlsx", range = cell_cols("B:D"))
+
 # └ map_dfr : 여러 파일 불러와서 합치기 1 -------------------------------------
 # 데이터 경로지정 및 데이터 목록
 files <- list.files(
@@ -121,7 +125,7 @@ df %>% arrange(var1, desc(var2)) # var1으로 오름차순, var1이 같을 경�
 # └ 1.4 distinct() : 중복된 행 제거 --------------------------------------------
 # 변수가 없을 경우 모든 열이 같을 때에만 중복된 것으로 결정
 # .keep_all=TRUE를 지정하면 데이터프레임의 모든 열을 가져올 수 있다.
-df %>% distinct(var1, .keep_all=TRUE)
+df %>% distinct(var1, .keep_all = TRUE)
 
 # 참고 : 중복자료 개수 확인
 df %>% group_by(var1) %>%

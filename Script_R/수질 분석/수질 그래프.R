@@ -11,9 +11,9 @@ library(extrafont)
 
 
 ### Excel 파일 불러오기_readxl
-obs <- read_excel("Data/총량측정망0722.xlsx")
+obs <- read_excel("수질 분석/총량측정망0723.xlsx")
 
-target <- read_excel("Data/목표수질.xlsx")
+target <- read_excel("수질 분석/목표수질.xlsx")
 
 
 

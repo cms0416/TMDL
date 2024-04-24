@@ -352,7 +352,7 @@ share_livestock <- share %>%
   select(-임시)
 
 
-## 유역/시군 기준 인구 합계 연도별 정리
+## 유역/시군 기준 합계 연도별 정리
 livestock_sum <- tibble()
 
 for (i in 2014:2022) {
