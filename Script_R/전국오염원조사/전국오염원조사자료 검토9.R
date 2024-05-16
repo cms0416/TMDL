@@ -982,7 +982,7 @@ files <- list.files(
 # 데이터 불러오기 및 합치기
 매립계_침출수_1원본 <- files %>%
   map_dfr(~ {
-    data <- read_excel(.x, , sheet = 2, skip = 2, col_names = F) 
+    data <- read_excel(.x, sheet = 2, skip = 2, col_names = F) 
     year <- str_sub(basename(.x), 1, 4) %>% as.integer()
     data <- data %>% mutate(연도 = year, .before = 1) 
   })

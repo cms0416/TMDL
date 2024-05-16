@@ -40,13 +40,12 @@ files <- list.files(
 
 share <- read_excel("전국오염원조사/단위유역별 점유율.xlsx") %>% 
   filter(축산계 != 0) %>% 
-  group_by(주소, 단위유역, 시군) %>%
+  group_by(동리코드, 단위유역) %>%
   summarise(축산계 = sum(축산계) / 100, .groups = "drop")
 
 share_2 <- share %>% 
   filter(축산계 > 0.98) %>% 
-  select(주소, 단위유역) %>% 
-  rename(동리코드 = 주소)
+  select(동리코드, 단위유역)
 
 #####  데이터 정리  ############################################################
 
