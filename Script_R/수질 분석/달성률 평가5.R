@@ -12,7 +12,7 @@ source("Script_R/Function/round2func.R")
 
 
 #####  파일 불러오기  ###############################################################
-obs <- read_excel("수질 분석/총량측정망0723_1.xlsx")
+obs <- read_excel("수질 분석/총량측정망0723.xlsx")
 
 target <- read_excel("수질 분석/목표수질.xlsx") %>%
   filter(강원도 == "강원도")

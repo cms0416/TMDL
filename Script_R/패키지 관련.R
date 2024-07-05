@@ -7,7 +7,8 @@ devtools::install_github("DesiQuintans/librarian")
 pkg <- c(
   "tidyverse", "data.table", "ggthemes", "writexl", "openxlsx",
   "showtext", "rvest", "RSelenium", "seleniumPipes", "styler", 
-  "remotes", "progress", "datapasta", "sf", "sp", "janitor", "gt"
+  "remotes", "progress", "datapasta", "sf", "sp", "janitor", "gt",
+  "ggcorrplot"
 )
 
 new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
@@ -32,11 +33,12 @@ library(sf)  # GIS 관련
 library(sp)  # GIS 관련
 library(janitor)  # 데이터 분석 도구
 library(gt)  # 표 꾸미기
+library(ggcorrplot) # 상관관계 그래프
 # library(extrafont)
 
 shelf("tidyverse", "data.table", "ggthemes", "writexl", "extrafont", "rvest", 
       "RSelenium", "seleniumPipes", "styler", "remotes", "progress", "sf", "sp",
-      "janitor", "gt")
+      "janitor", "gt", "ggcorrplot")
 
 
 ### 퀀트 관련 패키지

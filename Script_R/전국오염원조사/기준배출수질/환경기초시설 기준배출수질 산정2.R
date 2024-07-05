@@ -5,6 +5,10 @@ library(readxl)
 library(writexl)
 library(nortest)
 
+library(httr)
+library(jsonlite) # fromJSON()
+library(progress)
+
 
 ##****************************************************************************##
 ##############################  0. 시설 현황 확인  #############################
@@ -24,32 +28,22 @@ files <- list.files(
   # map_dfr : 행 병합(row-binding)하여 작성된 데이터프레임 반환
   map_dfr(read_excel, sheet = 1, skip = 3, col_names = F)
 
-# 동리별 유역 점유율 자료
-share <- read_excel("전국오염원조사/단위유역별 점유율.xlsx") %>%
-  rename(면적점유율 = `면적점유율(%)`) %>%
-  group_by(동리코드, 단위유역) %>%
-  reframe(면적점유율 = sum(면적점유율)) %>%
-  filter(면적점유율 > 0.98) %>%
-  select(동리코드, 단위유역)
 
-## 환경기초시설 유역 현황
 stp_유역 <- read_excel(
-  "전국오염원조사/환경기초시설/환경기초시설 현황/전오사 환경기초시설 현황 정리.xlsx",
-  skip = 1
+  "전국오염원조사/환경기초시설/환경기초시설 현황/환경기초시설_현황(2023).xlsx"
 ) %>%
-  select(2, 3, 13) %>%
-  mutate(단위유역 = str_remove_all(소유역명, "\\d"), .after = 처리시설코드) %>%
-  select(-c(처리시설명, 소유역명))
+  select(2, 14)
 
 
 #####  0-2. 데이터 정리  ###################################################
 
 시설현황_정리 <- 시설현황_원본 %>%
-  select(2:10) %>%
+  select(2:10, 26) %>%
   set_names(c(
     "처리시설명", "처리시설코드", "구분", "시도", "시군",
-    "읍면동", "리", "본번", "부번"
+    "읍면동", "리", "본번", "부번", "가동개시"
   )) %>%
+  # filter(!(시군 %in% c("동해시", "속초시", "양양군"))) %>% 
   mutate(
     주소 =
       str_c(
@@ -59,12 +53,117 @@ stp_유역 <- read_excel(
         ifelse(부번 == 0 | is.na(부번), "", str_c("-", 부번))
       ),
     동리 = ifelse(is.na(리), 읍면동, 리),
-    동리코드 = str_c(시군, 읍면동, 동리, sep = " ")
+    동리코드 = str_c(시군, 읍면동, 동리, sep = " "),
+    가동개시 = str_sub(가동개시, 1, 4)
   ) %>%
-  left_join(stp_유역, by = "처리시설코드") %>%
-  left_join(share %>% rename(단위유역2 = 단위유역), by = "동리코드") %>%
-  mutate(단위유역 = ifelse(is.na(단위유역), 단위유역2, 단위유역))
+  left_join(stp_유역, by = "처리시설코드") %>% 
+  distinct()
+#   left_join(share %>% rename(단위유역2 = 단위유역), by = "동리코드") %>%
+#   mutate(단위유역 = ifelse(is.na(단위유역), 단위유역2, 단위유역))
 
+
+#####  0-3. 단위유역 미확인 시설 유역 확인  ####################################
+
+##### 0-3-1. 주소 좌표 변환 ----------------------------------------------------
+## 단위유역 미확인 시설 시설명 및 주소 추출 후 ID 부여
+address_ind <- 시설현황_정리 %>%
+  filter(is.na(단위유역)) %>% 
+  rowid_to_column(var = "ID")
+
+## 주소 목록 list 생성
+address_list <- address_ind$주소
+
+## progress bar 설정
+pb <- progress_bar$new(
+  format = " Progress: [:bar] :current / :total (:percent), Estimated completion time::eta",
+  total = nrow(address_ind), # 총 tick 개수 (default 100)
+  clear = FALSE, # 종료 후에도 진행 경과 출력 결과 유지 (default TRUE)
+  width = 80 # 진행 경과 막대 너비
+)
+
+## tibble 사전 생성
+result <- tibble()
+temp <- tibble()
+
+## 주소 검색 및 데이터 취합
+for (i in 1:nrow(address_ind)) {
+  # 카카오맵 검색
+  place_list <- GET(
+    url = "https://dapi.kakao.com/v2/local/search/address.json",
+    query = list(query = address_list[i]),
+    add_headers(Authorization = "KakaoAK 9e9a85a9ec8362e009da2f7bc4b3a09c")
+  ) %>%
+    content(as = "text") %>%
+    fromJSON()
+  
+  # 업소명 및 기존 주소 불러오기
+  temp_addr <- address_ind %>% filter(ID == i)
+  
+  ## 주소
+  temp <- bind_cols(temp_addr, place_list$documents)
+  result <- bind_rows(result, temp)
+  
+  ## 진행상황 확인
+  pb$tick()
+}
+
+
+## 주소 검색 결과 정리
+# 중복 주소 정리
+# 기존 주소에서 카카오맵 검색결과 읍면동이 일치하지 않는 경우 삭제
+result %<>%
+  mutate(확인 = ifelse(is.na(x),
+                     TRUE,
+                     str_detect(주소, address$region_3depth_name)
+  )) %>%
+  filter(확인 == TRUE)
+
+
+#####  0-3-2. 유역 확인 --------------------------------------------------------
+
+library(sf)
+
+## 경위도좌표 정리
+경위도 <- result %>% 
+  mutate(across(c(x, y), as.numeric)) %>% 
+  select(처리시설명:동리코드, x, y)
+
+## 경위도 point 자료 생성(경위도 좌표계(WGS84) 적용 - EPSG:4326)
+경위도_point <- 경위도 %>% st_as_sf(coords = c('x', 'y'), crs = 4326)
+
+## 좌표를 EPSG:5174로 변경(단위유역 shp 파일과 좌표계 통일)
+경위도_point_5174 <- sf::st_transform(경위도_point, crs = 5174)
+
+
+## 단위유역 shp 파일 불러오기(sf객체)
+단위유역 <- sf::st_read("D:/GIS/유역/강원도_유역도_최종(이티워터)/총량단위유역_강원도_1985M_20200924.shp") %>% 
+  select(SW_NAME, geometry) %>% 
+  rename(단위유역 = SW_NAME)
+
+## 단위유역 정리
+stp_유역2 <- sf::st_join(경위도_point_5174, 단위유역) %>% 
+  # select(연도, 시군, 업소명, 주소전체, 지번주소, 단위유역 = SW_NAME) %>% 
+  mutate(단위유역 = ifelse(is.na(단위유역), "기타", 단위유역)) %>% 
+  # 지리정보(geometry) 제거
+  sf::st_drop_geometry()
+
+## 유역 확인된 시설 기존 정리자료와 합치기
+시설현황_정리 %<>% 
+  filter(!is.na(단위유역)) %>% 
+  bind_rows(stp_유역2) %>% 
+  mutate(
+    시군 = factor(시군, levels = c(
+      "춘천시", "원주시", "강릉시", "태백시", "삼척시", "홍천군",
+      "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군",
+      "양구군", "인제군", "고성군", "동해시", "속초시", "양양군"
+    ))) %>% 
+  arrange(시군, 처리시설명)
+
+## 정리자료 내보내기
+write_xlsx(
+  시설현황_정리, 
+  "전국오염원조사/환경기초시설/환경기초시설 현황/환경기초시설_현황(2023).xlsx"
+  )
 
 
 ##****************************************************************************##
@@ -83,7 +182,16 @@ files <- list.files(
 # 경로지정된 파일 합치기
 data_원본 <- files %>%
   # map_dfr : 행 병합(row-binding)하여 작성된 데이터프레임 반환
-  map_dfr(read_excel, sheet = 5, skip = 3, col_names = F)
+  map_dfr(~ {
+    data <- read_excel(.x, sheet = 5, skip = 3, col_names = F) %>% 
+      # 데이터 형식이 달라서 합쳐지지 않는 문제 해결
+      mutate(across(c(1:55), as.character))
+  })
+    
+    
+  # map_dfr : 행 병합(row-binding)하여 작성된 데이터프레임 반환
+  # map_dfr(read_excel, sheet = 5, skip = 3, col_names = F)
+
 
 data_정리 <- data_원본 %>%
   select(1, 7, 10, 14) %>%
@@ -246,11 +354,14 @@ TP_최대값 <- TP_data %>%
 ## 2030년 계획 자료 불러오기
 최종년도계획 <- 
   read_excel("전국오염원조사/기준배출수질/환경기초시설_2030년_계획.xlsx") %>% 
-  select(-c(구분, 준공연도))
+  select(-c(준공연도, 처리시설코드))
 
 ## 기준배출 수질 확인 및 정리
-기준배출수질_최종 <- 평균유량 %>%
-  left_join(최종년도계획, by = c("시군", "단위유역","처리시설명")) %>%
+# 기준배출수질_최종 <- 평균유량 %>%
+#   left_join(최종년도계획, by = c("시군", "단위유역","처리시설명")) %>%
+
+기준배출수질_최종 <- 최종년도계획 %>%
+  full_join(평균유량, by = c("시군", "단위유역","처리시설명")) %>% 
   left_join(BOD_기준배출수질_가 %>% select(처리시설명, BOD_가), by = "처리시설명") %>%
   left_join(BOD_기준배출수질_나 %>% select(처리시설명, BOD_나), by = "처리시설명") %>%
   left_join(BOD_최대값, by = "처리시설명") %>%
@@ -261,6 +372,7 @@ TP_최대값 <- TP_data %>%
   left_join(TP_최대값, by = "처리시설명") %>%
   left_join(TP_측정횟수, by = "처리시설명") %>%
   left_join(TP_정규성검증 %>% select(처리시설명, TP_정규성), by = "처리시설명") %>%
+  left_join(시설현황_정리 %>% select(처리시설명, 가동개시), by = "처리시설명") %>% 
   mutate(
     시군 = factor(시군, levels = c(
       "춘천시", "원주시", "강릉시", "태백시", "삼척시", "홍천군",
@@ -285,13 +397,17 @@ TP_최대값 <- TP_data %>%
       TP_정규성 == "정규성" ~ TP_가,
       TP_정규성 == "비정규성" ~ TP_나,
       TP_정규성 == "30회미만" ~ TP_최대
-    ) %>% round(., 3)
+    ) %>% round(., 3),
+    구분 = ifelse(is.na(구분), "신규", 구분)
   ) %>%
   relocate(c(평균유량, BOD_기준, TP_기준), .after = TP_30년) %>%
-  arrange(시군, 단위유역)
+  relocate(가동개시, .after = 구분) %>% 
+  arrange(시군, 단위유역, 구분, 처리시설명) %>% 
+  filter(!단위유역 %in% c("북한D", "임진A"), 
+         구분 != "미준공")
 
 
 ## 최종 정리 자료 내보내기
 write_xlsx(기준배출수질_최종,
-  path = "전국오염원조사/기준배출수질/Output/기준배출수질.xlsx"
+  path = "전국오염원조사/기준배출수질/Output/기준배출수질_2023년기준.xlsx"
 )

@@ -9,7 +9,7 @@ library(writexl)
 source("Script_R/Function/round2func.R")
 
 ### 데이터 불러오기
-obs <- read_excel("수질 분석/총량측정망0723_1.xlsx")
+obs <- read_excel("수질 분석/총량측정망_2007_2024.xlsx")
 
 target <- read_excel("수질 분석/목표수질.xlsx")
 
@@ -19,7 +19,7 @@ obs <- obs %>%
   filter(연도 >= 2014)
 
 ### 평가 연도 범위 설정(평가 시작 년도 +2)
-years <- 2016:2023
+years <- 2016:2024
 
 
 ##########  연평균 산정  #######################################################
@@ -196,10 +196,10 @@ TOC_total <- bind_files(TOC)
 
 ## BOD, TP 표 하나에 정리(업무보고 양식)
 BOD_TP_total <- BOD_total %>% 
-  select(-c(5:14)) %>% 
+  select(-c(`2014`:`2024`)) %>% 
   # mutate(항목 = "BOD", .before = 1) %>% 
   left_join(TP_total %>% 
-              select(-c(5:14)),
+              select(-c(`2014`:`2024`)),
             by = c("강원도", "권역", "총량지점명")) %>%
   filter(강원도 == "강원도") %>% 
   select("강원도":"BOD_목표수질", "TP_목표수질", sort(names(.))) %>% 
