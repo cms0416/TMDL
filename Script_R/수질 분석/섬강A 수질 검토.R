@@ -8,8 +8,11 @@ library(writexl)
 library(zoo)
 
 # 데이터 분석
-library(lmtest)
-library(car)
+library(psych)  # 상관분석
+library(broom)
+library(ggcorrplot)
+# library(GGally)
+# library(lmtest)
 
 # 그래프 작성
 library(scales)
@@ -25,7 +28,7 @@ showtext_auto()
 ## 기상자료
 기상자료 <- read_excel("수질 분석/섬강A/횡성기상대_강수량_기온_2014_2023.xlsx") %>%
   select(일자:일강수량) %>% 
-  # 3일 누적 강수량 산정
+  # 3일 누적 강수량 산정(zoo::rollapply)
   mutate(
     누적강수_3일 = rollapply(일강수량, width = 3, FUN = sum, align = "right", 
                         fill = NA, na.rm = TRUE),
@@ -56,7 +59,7 @@ obs <- read_excel("수질 분석/섬강A/섬강A_수질측정망_2014_2023.xlsx"
 
 ## 총량측정망(섬강A) 자료 정리
 섬강A <- read_excel("수질 분석/총량측정망_강원_2007_2024.xlsx") %>% 
-  filter(총량지점명 == "섬강A", 연도 >= 2014) %>% 
+  filter(총량지점명 == "섬강A", 연도 >= 2014, 연도 <= 2023) %>% 
   # BOD열에서 결측치 제거(결측치가 아닌 값들만 필터)
   filter(!is.na(BOD)) %>%
   # filter(!(TP == 2.108)) %>%
@@ -73,11 +76,22 @@ obs <- read_excel("수질 분석/섬강A/섬강A_수질측정망_2014_2023.xlsx"
   mutate(계절 = factor(계절, levels = c("봄", "여름", "가을", "겨울"))) %>% 
   mutate(
     목표수질_TP = 0.035,
-    초과여부 = ifelse(TP > 목표수질_TP, "초과", "달성")
+    초과여부 = ifelse(TP > 목표수질_TP, "초과", "달성"),
+    측정부하량_TP = 유량 * TP * 86.4,
+    목표부하량_TP = 유량 * 목표수질_TP * 86.4
   ) %>%
   left_join(기상자료, by = "일자") %>%
   arrange(desc(유량)) %>%
-  rowid_to_column(var = "유량크기순서")
+  rowid_to_column(var = "유량크기순서") %>% 
+  mutate(
+    유량백분율 = 유량크기순서 / nrow(.) * 100,
+    유황구간 = case_when(
+      유량백분율 <= 10 ~ "홍수기", 
+      유량백분율 > 10 & 유량백분율 <= 40 ~ "풍수기",
+      유량백분율 > 40 & 유량백분율 <= 60 ~ "평수기",
+      유량백분율 > 60 & 유량백분율 <= 90 ~ "저수기",
+      유량백분율 > 90 & 유량백분율 <= 100 ~ "갈수기"
+    ))
 
 
 ## 섬강A 자료와 기상자료 합치기
@@ -90,38 +104,38 @@ write_xlsx(섬강A, path = "수질 분석/Output/섬강A.xlsx")
 
 #####  데이터 분석  ############################################################
 
-## 계절별 초과율
-초과율_계절별 <- 섬강A %>% 
-  select(계절, 초과여부) %>% 
-  group_by(계절) %>% 
-  tally(name = "총측정횟수") %>% 
-  left_join(
-    섬강A %>% 
-      select(계절, 초과여부) %>% 
-      filter(초과여부 == "초과") %>% 
-      group_by(계절) %>% 
-      tally(name = "초과횟수"),
-    by = "계절"
-  ) %>% 
-  mutate(초과율 = 초과횟수 / 총측정횟수) %>% 
-  adorn_pct_formatting("초과율", digits = 2, rounding = "half up", affix_sign = TRUE)
+## 월별 강수량 합계
+강수량_월별 <- 기상자료 %>% 
+  select(일자, 일강수량) %>% 
+  mutate(
+    연도 = year(일자),
+    월 = month(일자)) %>% 
+  # 연도별 월강수량 합계
+  group_by(연도, 월) %>%
+  summarise(월강수량 = sum(일강수량, na.rm=TRUE), .groups = "drop") %>%
+  # 월별 강수량 평균
+  group_by(월) %>%
+  summarise(월강수량 = mean(월강수량, na.rm=TRUE), .groups = "drop")
 
 ## 월별 초과율
-초과율_월별 <- 섬강A %>% 
-  select(월, 초과여부) %>% 
-  group_by(월) %>% 
-  tally(name = "총측정횟수") %>% 
-  left_join(
-    섬강A %>% 
-      select(월, 초과여부) %>% 
-      filter(초과여부 == "초과") %>% 
-      group_by(월) %>% 
-      tally(name = "초과횟수"),
-    by = "월"
-  ) %>% 
-  mutate_all(~replace(., is.na(.), 0)) %>% 
-  mutate(초과율 = 초과횟수 / 총측정횟수) %>% 
-  adorn_pct_formatting("초과율", digits = 2, rounding = "half up", affix_sign = TRUE)  
+초과율_월별 <- 섬강A %>%
+  tabyl(월, 초과여부) %>% 
+  mutate(총계 = 달성 + 초과, .after = 1) %>% 
+  mutate(초과율 = round(초과 / 총계 * 100, 2)) %>% 
+  left_join(강수량_월별, by = "월")
+
+## 계절별 초과율
+초과율_계절별 <- 섬강A %>%
+  tabyl(계절, 초과여부) %>% 
+  mutate(총계 = 달성 + 초과, .after = 1) %>% 
+  mutate(초과율 = round(초과 / 총계 * 100, 2))
+
+## 유황구간별 초과율
+초과율_유황구간별 <- 섬강A %>%
+  tabyl(유황구간, 초과여부) %>% 
+  mutate(총계 = 달성 + 초과, .after = 1) %>% 
+  mutate(초과율 = round(초과 / 총계 * 100, 2))
+
 
 
 
@@ -130,83 +144,76 @@ write_xlsx(섬강A, path = "수질 분석/Output/섬강A.xlsx")
 ## 데이터 정리
 통계분석 <- 섬강A %>%
   select(-c(유량크기순서:일자, 연도:초과여부)) %>% 
-  relocate(TP, .before = 1)
+  relocate(TP, .before = 1) %>% 
+  # TP와 상관관계가 높은 순으로 데이터 순서 변경(상관관계 시각화시 순서대로 표현되도록)
+  select(TP, SS, 유량, 누적강수_3일, 누적강수_4일, 누적강수_5일, 평균기온, 
+         일강수량, COD, 수온, TOC, TN, BOD, pH, EC, DO)
 
-# 변수 간 상관관계 분석
-cor_matrix <- 통계분석 %>%
-  cor(use = "complete.obs")
-
-# 상관관계 시각화
-ggcorr(cor_matrix, label = TRUE, label_round = 2, label_alpha = TRUE)
-
-# 회귀분석
-model <- lm(TP ~ BOD + 유량 + TOC + 수온 + pH + EC + DO + COD + SS + TN + 평균기온 + 일강수량 + 누적강수_3일 + 누적강수_4일 + 누적강수_5일, data = 통계분석)
-
-# 회귀분석 결과 요약
-summary(model)
-
-# 회귀분석 결과를 정리
-tidy(model)
-
-# 잔차 분석
-par(mfrow = c(2, 2))
-plot(model)
-
-
-#_______________________________________________________________________________
 
 ## 단조 관계 가정
-pairs(상관분석)
+ggpairs(통계분석)
 
 ## 스피어만 상관 분석
-library(psych)
-
-# r-value
-상관분석결과_r <- corr.test(상관분석,
-  use = "complete",
-  method = "spearman",
-  adjust = "none"
+# r-value(상관계수) 행렬
+cor_matrix <- corr.test(통계분석,
+                      use = "complete",
+                      method = "pearson",
+                      adjust = "none"
 )$r 
 
 # p-value
-상관분석결과_p <- corr.test(상관분석,
+p_matrix <- corr.test(통계분석,
                       use = "complete",
-                      method = "spearman",
+                      method = "pearson",
                       adjust = "none"
 )$p
 
+# 상관계수 및 p-value 데이터프레임으로 변환
+cor_df <- cor_matrix %>% as.table() %>% as.data.frame()
+p_df <- p_matrix %>% as.table() %>% as.data.frame()
+
+cor_p_df <- cor_df %>% 
+  left_join(p_df, by = c("Var1", "Var2")) %>% 
+  set_names(c("수질항목1", "수질항목2", "상관계수", "p_value")) %>% 
+  mutate(
+    상관계수 = round(상관계수, 3),
+    p_value = round(p_value, 3),
+    유의수준 = ifelse(p_value > 0.05, "X", "O")
+    )
+
+cor_p_tp <- cor_p_df %>% 
+  filter(수질항목2 == "TP") %>% 
+  select(-수질항목2, -유의수준) %>% 
+  rename(변수 = 수질항목1) %>% 
+  arrange(desc(상관계수))
+
+# 파일 내보내기
+write_xlsx(cor_p_tp, path = "수질 분석/Output/섬강A_TP_상관계수.xlsx")
+
+# 상관계수 시각화
+pdf("E:/Coding/TMDL/수질 분석/Output/Plot/섬강A_상관계수.pdf",
+    width = 8.1, height = 8.1)
+
+ggcorrplot(cor_matrix, 
+           # hc.order = TRUE, 
+           type = 'lower',
+           lab = TRUE,
+           p.mat = p_matrix,
+           insig='blank',
+           lab_size = 3.5,
+           legend.title = "상관계수",
+           colors = c("#3B9AB2", "white", "red"),
+           outline.color = 'grey', 
+           digits = 3,
+           ggtheme = theme_bw, tl.cex = 10)
+
+dev.off()
+
+
 ######  그래프 작성  ###########################################################
 
-pdf("E:/Coding/TMDL/수질 분석/Output/Plot/섬강A.pdf",
-  width = 8.1, height = 5.9
-)
-
-## 유량 / 수질(T-P) 그래프
-섬강A %>%
-  ggplot() +
-  geom_bar(aes(x = 유량크기순서, y = 유량 / 1000, color = "steelblue2"), stat = "identity", width = 0.3, fill = "steelblue2") +
-  geom_point(aes(x = 유량크기순서, y = TP, color = "black", fill = 계절),
-    shape = 21, alpha = 0.6, size = 3
-  ) +
-  geom_hline(aes(yintercept = 0.035, color = "red"), linetype = "dashed", size = 0.7) +
-  scale_y_continuous(
-    name = "T-P(mg/L)",
-    sec.axis = sec_axis(~ . * 1000, name = "유량", labels = scales::comma)
-  ) +
-  theme_bw(base_family = "notosanskr", base_size = 14) +
-  scale_fill_discrete(name = "계절") + # 범례 제목
-  scale_color_manual(
-    name = NULL, values = c("black", "red", "steelblue2"),
-    labels = c("수질", "목표수질", "유량")
-  ) +
-  theme(
-    panel.border = element_rect(linewidth = 0.5, fill = NA),
-    legend.position = "top", # 범례 위치
-    legend.direction = "horizontal", # 범례 방향
-    legend.box = "horizontal", # 범례 배치 방향
-    legend.background = element_rect(linewidth = 0.3, fill = "white", color = "black"), # 범례 배경 및 테두리 색
-    legend.margin = margin(5, 5, 5, 5)
-  )
+pdf("E:/Coding/TMDL/수질 분석/Output/Plot/섬강A_TP_그래프.pdf",
+  width = 8.4, height = 4)
 
 ## 섬강A 유역 내 측정 지점 별 박스플롯
 obs %>%
@@ -220,7 +227,6 @@ obs %>%
   ) +
   scale_x_discrete(limits = c("전천", "섬강1", "섬강2", "섬강3")) +
   scale_y_log10(name = "T-P(mg/L)") +
-  # labs(y = "T-P(mg/L)") +
   theme_bw(base_family = "notosanskr", base_size = 14) +
   theme(
     axis.title.x = element_blank(),
@@ -251,6 +257,77 @@ obs %>%
     name = NULL, values = c("black", "red", "steelblue2"),
     labels = c("수질", "목표수질", "강수량")
   ) +
+  theme(
+    panel.border = element_rect(linewidth = 0.5, fill = NA),
+    legend.position = "top", # 범례 위치
+    legend.direction = "horizontal", # 범례 방향
+    legend.box = "horizontal", # 범례 배치 방향
+    legend.background = element_rect(linewidth = 0.3, fill = "white", color = "black"), # 범례 배경 및 테두리 색
+    legend.margin = margin(5, 5, 5, 5)
+  )
+
+## 유량 / 수질(T-P) 그래프
+섬강A %>%
+  ggplot() +
+  geom_bar(aes(x = 유량백분율, y = 유량 / 1000, color = "steelblue2"), stat = "identity", width = 0.3, fill = "steelblue2") +
+  geom_point(aes(x = 유량백분율, y = TP, color = "black", fill = 계절),
+             shape = 21, alpha = 0.6, size = 3
+  ) +
+  geom_vline(xintercept = c(0, 10, 40, 60, 90, 100), linetype = 'dashed', size = 0.5) +
+  geom_hline(aes(yintercept = 0.035, color = "red"), linetype = "dashed", size = 0.7) +
+  scale_y_continuous(
+    name = "T-P(mg/L)",
+    sec.axis = sec_axis(~ . * 1000, name = "유량(㎥/s)", labels = scales::comma)
+  ) +
+  scale_x_continuous(
+    name = "유량 백분율(%)",
+    breaks = seq(0, 100, 10),                    # x축 표시 형식 설정
+    labels = paste0(c(0,10,20,30,40,50,60,70,80,90,100))
+  ) +
+  annotate(geom='text', x = 5, y = 0.28, label = "홍수기") +
+  annotate(geom='text', x = 25, y = 0.28, label = "풍수기") +
+  annotate(geom='text', x = 50, y = 0.28, label = "평수기") +
+  annotate(geom='text', x = 75, y = 0.28, label = "저수기") +
+  annotate(geom='text', x = 95, y = 0.28, label = "갈수기") +
+  theme_test(base_family = "notosanskr", base_size = 14) +
+  scale_fill_discrete(name = "계절") + # 범례 제목
+  scale_color_manual(
+    name = NULL, values = c("black", "red", "steelblue2"),
+    labels = c("수질", "목표수질", "유량")
+  ) +
+  theme(
+    panel.border = element_rect(linewidth = 0.5, fill = NA),
+    legend.position = "top", # 범례 위치
+    legend.direction = "horizontal", # 범례 방향
+    legend.box = "horizontal", # 범례 배치 방향
+    legend.background = element_rect(linewidth = 0.3, fill = "white", color = "black"), # 범례 배경 및 테두리 색
+    legend.margin = margin(5, 5, 5, 5)
+  )
+
+## 간이 LDC 그래프
+섬강A %>% 
+  ggplot() +
+  geom_vline(xintercept = c(0, 10, 40, 60, 90, 100), linetype = 'dashed', size = 0.5) +
+  geom_point(aes(x = 유량백분율, y = 측정부하량_TP, fill = 계절,        # 실측 부하량 포인트
+                              color = "black"), shape = 21, alpha = 0.6, size = 3) + 
+  geom_line(aes(x = 유량백분율, y = 목표부하량_TP, color = "red"), group = 1,     # 목표 부하량 지속 곡선(LDC)
+            linetype = 2, size = 1.1) + 
+  scale_y_log10(name = "T-P 부하량 (kg/d)") +   # y축 log 스케일 변환
+  scale_x_continuous(
+    name = "유량 백분율(%)",
+    breaks = seq(0, 100, 10),                    # x축 표시 형식 설정
+    labels = paste0(c(0,10,20,30,40,50,60,70,80,90,100))
+    ) +
+  annotate(geom='text', x = 5, y = 0.1, label = "홍수기") +
+  annotate(geom='text', x = 25, y = 0.1, label = "풍수기") +
+  annotate(geom='text', x = 50, y = 0.1, label = "평수기") +
+  annotate(geom='text', x = 75, y = 0.1, label = "저수기") +
+  annotate(geom='text', x = 95, y = 0.1, label = "갈수기") +
+  theme_test(base_family = "notosanskr", base_size = 14) + 
+  scale_fill_discrete(name = "계절") +             # 범례 제목
+  scale_color_manual(name = NULL, values = c("black", "red"),
+                     labels = c("실측부하량", "LDC")) +
+  guides(color = guide_legend(override.aes = list(shape = c(21, NA), linetype = c(NA, 2)))) +
   theme(
     panel.border = element_rect(linewidth = 0.5, fill = NA),
     legend.position = "top", # 범례 위치

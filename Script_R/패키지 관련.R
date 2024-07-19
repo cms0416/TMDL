@@ -8,13 +8,19 @@ pkg <- c(
   "tidyverse", "data.table", "ggthemes", "writexl", "openxlsx",
   "showtext", "rvest", "RSelenium", "seleniumPipes", "styler", 
   "remotes", "progress", "datapasta", "sf", "sp", "janitor", "gt",
-  "ggcorrplot"
+  "psych", "ggcorrplot", "scales"
 )
 
+### 패키지 설치
+## install.packages 함수에 "repos" 추가
+## (https://stackoverflow.com/questions/25721884/how-should-i-deal-with-package-xxx-is-not-available-for-r-version-x-y-z-wa)
+
 new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+
 if (length(new.pkg)) {
-  install.packages(new.pkg, dependencies = TRUE)
+  install.packages(new.pkg, dependencies = TRUE, repos='http://cran.rstudio.com/')
 }
+
 
 library(tidyverse)
 library(data.table)
@@ -33,7 +39,9 @@ library(sf)  # GIS 관련
 library(sp)  # GIS 관련
 library(janitor)  # 데이터 분석 도구
 library(gt)  # 표 꾸미기
+library(psych)  # 상관분석
 library(ggcorrplot) # 상관관계 그래프
+library(scales)
 # library(extrafont)
 
 shelf("tidyverse", "data.table", "ggthemes", "writexl", "extrafont", "rvest", 
@@ -50,6 +58,7 @@ pkg <- c(
 )
 
 new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+
 if (length(new.pkg)) {
   install.packages(new.pkg, dependencies = TRUE)
 }
