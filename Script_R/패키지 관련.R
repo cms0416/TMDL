@@ -8,7 +8,7 @@ pkg <- c(
   "tidyverse", "data.table", "ggthemes", "writexl", "openxlsx",
   "showtext", "rvest", "RSelenium", "seleniumPipes", "styler", 
   "remotes", "progress", "datapasta", "sf", "sp", "janitor", "gt",
-  "psych", "ggcorrplot", "scales"
+  "psych", "ggcorrplot", "scales", "nortest"
 )
 
 ### 패키지 설치
@@ -42,6 +42,7 @@ library(gt)  # 표 꾸미기
 library(psych)  # 상관분석
 library(ggcorrplot) # 상관관계 그래프
 library(scales)
+library(nortest) # 정규성 검증
 # library(extrafont)
 
 shelf("tidyverse", "data.table", "ggthemes", "writexl", "extrafont", "rvest", 

@@ -121,6 +121,9 @@ df %>% slice_min(var, prop=0.1) # var이 작은 순서대로 전체 행의 10%�
 df %>% arrange(var1)             # var1으로 오름차순
 df %>% arrange(var1, desc(var2)) # var1으로 오름차순, var1이 같을 경우 var2로 내림차순
 
+# └ 1.3.1 fct_reorder() : 다른 행을 기준으로 범주형 데이터(factor) 정렬 --------
+# var1을 var2 기준으로 정렬(내림차순 정렬 : .desc 를 TRUE 로 지정)
+df %>% mutate(var1 = fct_reorder(var1, var2, .desc = T))
 
 # └ 1.4 distinct() : 중복된 행 제거 --------------------------------------------
 # 변수가 없을 경우 모든 열이 같을 때에만 중복된 것으로 결정
@@ -220,7 +223,7 @@ case_when(
   condition1 ~ value_1,
   condition2 ~ value_2,
   ...,
-  TRUE ~ value_n)
+  .default =  ~ value_n)
 
 # 예시
 df %>% mutate(speed_tag = case_when(speed < 5 ~ "SLOW",
@@ -230,7 +233,7 @@ df %>% mutate(speed_tag = case_when(speed < 5 ~ "SLOW",
 
 # 3. 행 자료의 요약 ----------------------------------------------------------
 # ++ summarise() -----
-df %>% sumamrise(total_num=n(), unique_num=n_distinct()) # 중복되지 않는 열의 개수
+df %>% sumamrise(total_num = n(), unique_num = n_distinct()) # 중복되지 않는 열의 개수
 
 
 # 4. 데이터프레임 그룹화 -------------------------------------------------------
@@ -254,7 +257,7 @@ df %>% group_by(var1) %>% sumamrise(total_num = n()) %>% ungroup()
 # var1 그룹별로 var2 평균
 df %>% group_by(var1) %>% summarise(var2_mean = mean(var2, na.rm=TRUE), .groups = "drop")
 # var1 그룹별로 var2가 결측값인 행의 개수
-df %>% group(var1) %>% summarise(na_count=sum(var2, na.rm=TRUE), .groups = "drop")
+df %>% group(var1) %>% summarise(na_count = sum(var2, na.rm=TRUE), .groups = "drop")
 
 # select() : 그룹을 구성하는 변수는 선택 대상이 아니어도 자동으로 선택된다.
 
@@ -294,6 +297,10 @@ df %>% group_by(var1) %>% summarise(group_n = n())
 # var1, var2 그룹별로 var3, var4 합계 계산 후 그룹화 해제
 df %>% group_by(var1, var2) %>%
   summarise(across(c(var3, var4), ~ sum(.)), .groups = "drop")
+
+# 모든 변수의 평균값을 계산
+df %>% summarise(across(everything(), mean))
+df %>% summarise_all(list(mean))
 
 # 모든 숫자형 변수의 평균값을 계산
 df %>% summarise(across(where(is.numeric), mean))

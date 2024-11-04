@@ -19,14 +19,14 @@ livestock <- files %>%
   map_dfr(read_excel, skip = 6, col_names = F)
 
 # 조사 미완료 시군(철원, 화천, 인제) 전년도 자료로 붙여넣기
-livestock_22 <- read_excel(
-  "전국오염원조사/축산계/2022년기준_전국오염원_조사자료_축산계_가축분뇨현황.xlsx",
-  skip = 6, col_names = F
-  ) %>% 
-  filter(`...11` %in% c("철원군", "화천군", "인제군"))
-
-livestock %<>% 
-  bind_rows(livestock_22)
+# livestock_22 <- read_excel(
+#   "전국오염원조사/축산계/2022년기준_전국오염원_조사자료_축산계_가축분뇨현황.xlsx",
+#   skip = 6, col_names = F
+#   ) %>% 
+#   filter(`...11` %in% c("철원군", "화천군", "인제군"))
+# 
+# livestock %<>% 
+#   bind_rows(livestock_22)
 
 # 제목 행 추가(기존 자료와 합치기 위해 동일한 갯수로 추가)
 livestock %<>% add_row(`...1` = rep(NA, 5), .before = 1)

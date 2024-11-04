@@ -264,7 +264,9 @@ files <- list.files(
   map_dfr(~ {
     data <- read_excel(.x, skip = 2, col_names = F) 
     year <- str_sub(basename(.x), 1, 4) %>% as.integer()
-    data <- data %>% mutate(연도 = year, .before = 1) 
+    data <- data %>% mutate(연도 = year, .before = 1) %>% 
+      # 데이터 형식이 달라서 합쳐지지 않는 문제 해결('23년 가확정 자료)
+      mutate(across(where(is.numeric), ~ as.character(.x)))
   })
 ## *****************************************************************************
 
@@ -552,10 +554,17 @@ files <- list.files(
 ###################################  그래프  ###################################
 ##**************************************************************************** ##
 
+### 그래프 작성 기준 연도 설정
+기준연도 <- list(2022)
+
+### 그래프 pdf파일 생성 경로 및 사이즈 설정
+pdf("E:/Coding/TMDL/전국오염원조사/Output/Plot/전국오염원조사확정결과_그래프(8.2x4.3).pdf",
+    width = 8.2, height = 4.3)
+
 ## 그래프_생활계_지역별인구현황 -----
 인구_total %>% 
   # 연도 선택 및 도전체 합계 삭제
-  filter(연도 == 2021, 시군 != "강원도") %>% 
+  filter(연도 == 기준연도, 시군 != "강원도") %>% 
   # "시", "군" 삭제
   mutate(시군 = str_remove(시군, "(시|군)")) %>% 
   ggplot(aes(x = 시군, y = 가정인구합계 * 0.001, fill = 시군)) +
@@ -566,7 +575,7 @@ files <- list.files(
                               "삼척", "홍천", "횡성", "영월", "평창", "정선",
                               "철원", "화천", "양구", "인제", "고성", "양양")) +
   scale_y_continuous(name = "인구(천명)", breaks = seq(0, 350, by=50)) +
-  theme_classic() +
+  theme_few() +
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_text(size = 13, face = "bold", color = "black"),
@@ -578,7 +587,7 @@ files <- list.files(
 ## 그래프_생활계_지역별처리인구현황 -----
 인구_처리 %>% 
   # 연도 선택 및 도전체 합계 삭제
-  filter(연도 == 2021, 시군 != "강원도", 구분 != "총인구") %>% 
+  filter(연도 == 기준연도, 시군 != "강원도", 구분 != "총인구") %>% 
   # "시", "군" 삭제
   mutate(시군 = str_remove(시군, "(시|군)")) %>% 
   ggplot(aes(x = 시군, y = 인구 * 0.001, fill = 구분)) +
@@ -586,14 +595,14 @@ files <- list.files(
   geom_text(aes(y = 라벨위치 * 0.001, label = round(인구 * 0.001)),
             size = 4, check_overlap = TRUE) +
   geom_text(aes(y = 가정인구합계 * 0.001, label = round(가정인구합계 * 0.001)),
-            vjust = -1.6, size = 4.3, color = "blue")+
+            vjust = -1.8, size = 4.3, color = "blue")+
   geom_text(aes(y = 가정인구합계 * 0.001, label = str_c("(", 처리율, "%)")),
-            vjust = -0.6, size = 3.5, color = "blue")+
+            vjust = -0.8, size = 3.5, color = "blue")+
   scale_x_discrete(limits = c("춘천", "원주", "강릉", "동해", "태백", "속초",
                               "삼척", "홍천", "횡성", "영월", "평창", "정선",
                               "철원", "화천", "양구", "인제", "고성", "양양")) +
   scale_y_continuous(name = "인구(천명)", breaks = seq(0, 400, by = 50), limits = c(0, 400)) +
-  theme_classic(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_text(size = 13, face = "bold", color = "black"),
@@ -601,8 +610,8 @@ files <- list.files(
     axis.text.y = element_text(size = 11, color = "black"),
     legend.title = element_blank(),
     legend.text = element_text(size = 11),
-    legend.position = c(0.80, 0.80),
-    panel.border = element_rect(fill = NA)
+    legend.position = "inside",
+    legend.position.inside = c(0.80, 0.80)
   )
 
 
@@ -617,7 +626,7 @@ files <- list.files(
   scale_x_continuous(breaks = seq(0, 10000, 1)) +
   scale_y_continuous(name = "인구(천명)", breaks = seq(0, 1800, by = 400), 
                      limits = c(0, 1800), labels = scales::comma) +
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -661,12 +670,12 @@ files <- list.files(
   geom_text(data = . %>% filter(축종 == "가금"),
             aes(x = 연도, y = 사육두수 * 0.00009, 
                 label = comma(round(사육두수 * 0.001))), 
-            size = 3.5, vjust = 1.3, 
+            size = 3.5, vjust = 2, 
             color = "black", check_overlap = TRUE) +
   geom_text(data = . %>% filter(축종 %in% c("한우", "젖소", "돼지")),
             aes(x = 연도, y = 사육두수 * 0.001, 
                 label = comma(round(사육두수 * 0.001))), 
-            size = 3.5, vjust = -0.5, 
+            size = 3.5, vjust = -0.7, 
             color = "black", check_overlap = TRUE) +
   scale_fill_manual(values = c("총 사육두수" = "wheat"), breaks = "총 사육두수") +
   scale_color_manual(values = c("한우" = "red", "젖소" = "mediumblue", 
@@ -678,7 +687,7 @@ files <- list.files(
                      labels = scales::comma,
                      sec.axis = sec_axis(~./0.09, name = "총 사육두수, 가금(천두)", 
                                          labels = scales::comma)) +
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -692,6 +701,7 @@ files <- list.files(
     legend.position = "top",
     legend.direction = "horizontal"
   )
+
 
 ## 그래프_축산계_농가수변화 -----
 축산계_total %>% 
@@ -714,19 +724,19 @@ files <- list.files(
              stat='identity', size = 2) +
   geom_text(data = . %>% filter(축종 == "합계"),
             aes(x = 연도, y = 농가수/2, label = comma(농가수)), 
-            size = 3.5, vjust = -0.5, 
+            size = 3.5, vjust = -0.6, 
             color = "black", check_overlap = TRUE) +
   geom_text(data = . %>% filter(축종 == "한우"),
             aes(x = 연도, y = 농가수/2, label = comma(농가수)), 
-            size = 3.5, vjust = 1.3, 
+            size = 3.5, vjust = -0.6, 
             color = "black", check_overlap = TRUE) +
   geom_text(data = . %>% filter(축종 %in% c("젖소", "가금")),
             aes(x = 연도, y = 농가수, label = comma(농가수)), 
-            size = 3.5, vjust = -0.5, 
+            size = 3.5, vjust = -0.6, 
             color = "black", check_overlap = TRUE) +
   geom_text(data = . %>% filter(축종 == "돼지"),
             aes(x = 연도, y = 농가수, label = comma(농가수)), 
-            size = 3.5, vjust = 1.5, 
+            size = 3.5, vjust = 1.6, 
             color = "black", check_overlap = TRUE) +
   scale_fill_manual(values = c("총 농가수" = "wheat"), breaks = "총 농가수") +
   scale_color_manual(values = c("한우" = "red", "젖소" = "mediumblue", 
@@ -738,7 +748,7 @@ files <- list.files(
                      labels = scales::comma,
                      sec.axis = sec_axis(~.*2, name = "총 농가수, 한우(호)", 
                                          labels = scales::comma)) +
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -757,17 +767,16 @@ files <- list.files(
 ## 그래프_축산계_시군별 한우 사육두수 -----
 축산계_total %>% 
   # 연도 선택 및 도전체 합계 삭제
-  filter(연도 == 2021, 시군 != "강원도", 축종 == "한우") %>% 
+  filter(연도 == 기준연도, 시군 != "강원도", 축종 == "한우") %>% 
   # "시", "군" 삭제
   mutate(시군 = str_remove(시군, "(시|군)")) %>% 
-  ggplot(aes(x = reorder(시군, -사육두수), y = 사육두수)) +
+  ggplot(aes(x = reorder(시군, -사육두수), y = 사육두수/1000)) +
   geom_bar(stat='identity', fill = "deepskyblue3", width = 0.7) +
-  geom_text(aes(label = comma(사육두수)), size = 3.5, vjust = -0.5, 
-            color = "black", check_overlap = TRUE) +
-
-  scale_y_continuous(name = "사육두수", breaks = seq(0, 100000, by = 10000), 
-                     limits = c(0, 70000), labels = scales::comma) +
-  theme_calc(base_family = "notosanskr") +
+  geom_text(aes(label = comma(round(사육두수/1000, 2), accuracy = 0.01)), size = 3.5, 
+            vjust = -0.5, color = "black", check_overlap = TRUE) +
+  scale_y_continuous(name = "사육두수(천두)", breaks = seq(0, 100, by = 10), 
+                     limits = c(0, 70), labels = scales::comma) +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -775,17 +784,14 @@ files <- list.files(
     axis.text.x = element_text(size = 11, color = "black"),
     axis.text.y = element_text(size = 11, color = "black"),
     axis.ticks.x.top = element_line(),
-    axis.ticks.y.right = element_line(),
-    legend.title = element_blank(),
-    legend.text = element_text(size = 11),
-    legend.position = "top",
-    legend.direction = "horizontal"
+    axis.ticks.y.right = element_line()
   )
+
 
 ## 그래프_축산계_시군별 젖소 사육두수 -----
 축산계_total %>% 
   # 연도 선택 및 도전체 합계 삭제
-  filter(연도 == 2021, 시군 != "강원도", 축종 == "젖소") %>% 
+  filter(연도 == 기준연도, 시군 != "강원도", 축종 == "젖소", 사육두수 != 0) %>% 
   # "시", "군" 삭제
   mutate(시군 = str_remove(시군, "(시|군)")) %>% 
   ggplot(aes(x = reorder(시군, -사육두수), y = 사육두수)) +
@@ -795,7 +801,7 @@ files <- list.files(
   
   scale_y_continuous(name = "사육두수", breaks = seq(0, 100000, by = 2000), 
                      limits = c(0, 14000), labels = scales::comma) +
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -803,27 +809,23 @@ files <- list.files(
     axis.text.x = element_text(size = 11, color = "black"),
     axis.text.y = element_text(size = 11, color = "black"),
     axis.ticks.x.top = element_line(),
-    axis.ticks.y.right = element_line(),
-    legend.title = element_blank(),
-    legend.text = element_text(size = 11),
-    legend.position = "top",
-    legend.direction = "horizontal"
+    axis.ticks.y.right = element_line()
   )
+
 
 ## 그래프_축산계_시군별 돼지 사육두수 -----
 축산계_total %>% 
   # 연도 선택 및 도전체 합계 삭제
-  filter(연도 == 2021, 시군 != "강원도", 축종 == "돼지") %>% 
+  filter(연도 == 기준연도, 시군 != "강원도", 축종 == "돼지") %>% 
   # "시", "군" 삭제
   mutate(시군 = str_remove(시군, "(시|군)")) %>% 
-  ggplot(aes(x = reorder(시군, -사육두수), y = 사육두수)) +
+  ggplot(aes(x = reorder(시군, -사육두수), y = 사육두수/1000)) +
   geom_bar(stat='identity', fill = "deepskyblue3", width = 0.7) +
-  geom_text(aes(label = comma(사육두수)), size = 3.5, vjust = -0.5, 
-            color = "black", check_overlap = TRUE) +
-  
-  scale_y_continuous(name = "사육두수", breaks = seq(0, 1000000, by = 20000), 
-                     limits = c(0, 160000), labels = scales::comma) +
-  theme_calc(base_family = "notosanskr") +
+  geom_text(aes(label = comma(round(사육두수/1000, 2), accuracy = 0.01)), 
+            size = 3.5, vjust = -0.5, color = "black", check_overlap = TRUE) +
+  scale_y_continuous(name = "사육두수(천두)", breaks = seq(0, 1000, by = 20), 
+                     limits = c(0, 160), labels = scales::comma) +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -831,28 +833,23 @@ files <- list.files(
     axis.text.x = element_text(size = 11, color = "black"),
     axis.text.y = element_text(size = 11, color = "black"),
     axis.ticks.x.top = element_line(),
-    axis.ticks.y.right = element_line(),
-    legend.title = element_blank(),
-    legend.text = element_text(size = 11),
-    legend.position = "top",
-    legend.direction = "horizontal"
+    axis.ticks.y.right = element_line()
   )
 
 
 ## 그래프_축산계_시군별 가금 사육두수 -----
 축산계_total %>% 
   # 연도 선택 및 도전체 합계 삭제
-  filter(연도 == 2021, 시군 != "강원도", 축종 == "가금") %>% 
+  filter(연도 == 기준연도, 시군 != "강원도", 축종 == "가금") %>% 
   # "시", "군" 삭제
   mutate(시군 = str_remove(시군, "(시|군)")) %>% 
   ggplot(aes(x = reorder(시군, -사육두수*0.0001), y = 사육두수*0.0001)) +
   geom_bar(stat='identity', fill = "deepskyblue3", width = 0.7) +
   geom_text(aes(label = comma(사육두수*0.0001)), size = 3.5, vjust = -0.5, 
             color = "black", check_overlap = TRUE) +
-  
   scale_y_continuous(name = "사육두수(만두)", breaks = seq(0, 10000, by = 20), 
                      limits = c(0, 200), labels = scales::comma) +
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -860,16 +857,10 @@ files <- list.files(
     axis.text.x = element_text(size = 11, color = "black"),
     axis.text.y = element_text(size = 11, color = "black"),
     axis.ticks.x.top = element_line(),
-    axis.ticks.y.right = element_line(),
-    legend.title = element_blank(),
-    legend.text = element_text(size = 11),
-    legend.position = "top",
-    legend.direction = "horizontal"
+    axis.ticks.y.right = element_line()
   )
 
-
 #_______________________________________________________________________________
-
 
 ## 그래프_산업계_연도추이 -----
 산업계_total %>% 
@@ -905,7 +896,7 @@ files <- list.files(
                      labels = scales::comma,
                      sec.axis = sec_axis(~./10, name = "폐수 발생·방류량(천톤/일)", 
                                          labels = scales::comma)) +
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -924,7 +915,7 @@ files <- list.files(
 ## 그래프_산업계_시군별 업소수 -----
 산업계_total %>% 
   # 연도 선택 및 도전체 합계 삭제
-  filter(연도 == 2021, 시군 != "강원도", 규모 == "합계") %>% 
+  filter(연도 == 기준연도, 시군 != "강원도", 규모 == "합계") %>% 
   # "시", "군" 삭제
   mutate(시군 = str_remove(시군, "(시|군)")) %>% 
   ggplot(aes(x = reorder(시군, -업소수), y = 업소수)) +
@@ -941,17 +932,13 @@ files <- list.files(
     axis.text.x = element_text(size = 11, color = "black"),
     axis.text.y = element_text(size = 11, color = "black"),
     axis.ticks.x.top = element_line(),
-    axis.ticks.y.right = element_line(),
-    legend.title = element_blank(),
-    legend.text = element_text(size = 11),
-    legend.position = "top",
-    legend.direction = "horizontal"
+    axis.ticks.y.right = element_line()
   )
 
 ## 그래프_산업계_시군별 폐수 발생, 방류량 -----
 산업계_total %>% 
   # 연도 선택 및 도전체 합계 삭제
-  filter(연도 == 2021, 시군 != "강원도", 규모 == "합계") %>% 
+  filter(연도 == 기준연도, 시군 != "강원도", 규모 == "합계") %>% 
   pivot_longer(
     cols = 폐수발생량:폐수방류량,
     names_to = "구분",   
@@ -964,7 +951,7 @@ files <- list.files(
            stat='identity', width = 0.7) +
   scale_y_continuous(name = "폐수 발생·방류량(톤/일)", breaks = seq(0, 100000, by = 10000), 
                      limits = c(0, 70000), labels = scales::comma) +
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -986,14 +973,19 @@ files <- list.files(
 ## 그래프_토지계_시군별 지목 면적 -----
 토지계_total %>% 
   # 연도 선택 및 도전체 합계 삭제
-  filter(연도 == 2021, 시군 != "강원도", 지목 != "합계") %>% 
+  filter(연도 == 기준연도, 시군 != "강원도", 지목 != "합계") %>% 
   # "시", "군" 삭제
   mutate(시군 = str_remove(시군, "(시|군)")) %>% 
   ggplot(aes(x = reorder(시군, -면적), y = 면적, fill = 지목)) +
   geom_bar(stat='identity', width = 0.7) +
+  geom_text(aes(label =comma(면적)), size = 3, 
+            position = position_stack(vjust = 0.5),
+            color = "black", check_overlap = TRUE) +
+  geom_text(aes(y = 총면적, label = comma(총면적)), size = 3.5, vjust = -0.5,
+            check_overlap = TRUE) +
   scale_y_continuous(name = "토지면적(㎢)", breaks = seq(0, 100000, by = 500), 
                      limits = c(0, 1800), labels = scales::comma) +
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -1023,7 +1015,7 @@ files <- list.files(
   scale_x_continuous(breaks = seq(0, 10000, 1)) +
   scale_y_continuous(name = "토지면적(㎢)", breaks = seq(0, 100000, by = 5000), 
                      limits = c(0, 18000), labels = scales::comma) +
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -1054,7 +1046,7 @@ files <- list.files(
   scale_x_continuous(breaks = seq(0, 10000, 1)) +
   scale_y_continuous(name = "양식장수(개소)", breaks = seq(0, 100000, by = 50), 
                      limits = c(0, 200), labels = scales::comma) +
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -1073,7 +1065,7 @@ files <- list.files(
 ## 그래프_양식계_시군별 양식장 수 -----
 양식계_total %>% 
   # 연도 선택 및 도전체 합계 삭제
-  filter(연도 == 2021, 시군 != "강원도", 종류 != "합계") %>% 
+  filter(연도 == 기준연도, 시군 != "강원도", 종류 != "합계") %>% 
   # "시", "군" 삭제
   mutate(시군 = str_remove(시군, "(시|군)")) %>% 
   ggplot(aes(x = reorder(시군, -양식장수, FUN = sum), y = 양식장수, fill = 종류)) +
@@ -1082,8 +1074,8 @@ files <- list.files(
             position = position_stack(vjust = 0.5),
             color = "black", check_overlap = TRUE) +
   scale_y_continuous(name = "양식장수(개소)", breaks = seq(0, 100000, by = 10), 
-                     limits = c(0, 40), labels = scales::comma) +
-  theme_calc(base_family = "notosanskr") +
+                     limits = c(0, 25), labels = scales::comma) +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -1117,7 +1109,7 @@ files <- list.files(
   scale_fill_manual(values = c("공공하수" = "tomato", "소규모하수" = "orange", "공공폐수" = "deepskyblue",
                                "분뇨(생활가축)" = "green", "매립장" = "violet"),
                     labels = c("공공하수", "소규모하수", "공공폐수", "분뇨(생활가축)", "매립장")) +
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -1132,40 +1124,40 @@ files <- list.files(
     legend.direction = "horizontal"
   )
 
-
 ## 그래프_환경기초시설_처리량 연도추이 -----
 환경기초시설_total %>% 
   # 연도 선택 및 도전체 합계 삭제
   filter(시군 == "강원도", 종류 != "합계") %>% 
-  ggplot(aes(x = 연도, y = 처리량, fill = 종류)) +
+  ggplot(aes(x = 연도, y = 처리량/1000, fill = 종류)) +
   geom_line(data = . %>% filter(종류 == "공공하수"),
-            aes(y = 처리량/11, color = 종류), 
+            aes(y = 처리량/1000/12, color = 종류), 
             stat='identity', linewidth = 0.8) +
   geom_point(data = . %>% filter(종류 == "공공하수"),
-            aes(y = 처리량/11, color = 종류), 
-            stat='identity', size = 2) +
+            aes(y = 처리량/1000/12, color = 종류), 
+            stat='identity', shape = 21, size = 2.5, stroke = 1, fill = "white") +
   geom_text(data = . %>% filter(종류 == "공공하수"),
-            aes(y = 처리량/11, label =comma(처리량)), 
-            size = 3.5, vjust = -0.5,
+            aes(y = 처리량/1000/12, label =comma(round(처리량/1000, 2))), 
+            size = 3.5, vjust = -0.9,
             color = "black", check_overlap = TRUE) +
   
   geom_bar(data = . %>% filter(종류 != "공공하수"), 
            stat='identity', width = 0.7) +
   geom_text(data = . %>% filter(종류 != "공공하수"),
-            aes(label =comma(처리량)), size = 3.5,
+            aes(label =comma(round(처리량/1000, 2))), size = 3.5,
             position = position_stack(vjust = 0.5),
             color = "black", check_overlap = TRUE) +
   
   scale_x_continuous(breaks = seq(0, 10000, 1)) +
-  scale_y_continuous(name = "처리량(톤/일)", breaks = seq(0, 100000, by = 10000), 
-                     limits = c(0, 60000), labels = scales::comma,
-                     sec.axis = sec_axis(~.*11, name = "공공하수처리량(톤/일)", 
+  scale_y_continuous(name = "처리량(천톤/일)", breaks = seq(0, 100, by = 10), 
+                     limits = c(0, 60), labels = scales::comma,
+                     sec.axis = sec_axis(~.*12, name = "공공하수 처리량(톤/일)",
+                                         breaks = seq(0, 1000, by = 200),
                                          labels = scales::comma)) +
   scale_fill_manual(values = c("소규모하수" = "orange", "공공폐수" = "deepskyblue",
                                "분뇨(생활가축)" = "green", "매립장" = "violet"),
                     labels = c("소규모하수", "공공폐수", "분뇨(생활가축)", "매립장")) +
 
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -1184,7 +1176,7 @@ files <- list.files(
 ## 그래프_환경기초시설_시군별 시설수 -----
 환경기초시설_total %>% 
   # 연도 선택 및 도전체 합계 삭제
-  filter(연도 == 2021, 시군 != "강원도", 종류 != "합계") %>% 
+  filter(연도 == 기준연도, 시군 != "강원도", 종류 != "합계") %>% 
   # "시", "군" 삭제
   mutate(시군 = str_remove(시군, "(시|군)")) %>% 
   ggplot(aes(x = reorder(시군, -시설수, FUN = sum), y = 시설수, fill = 종류)) +
@@ -1194,7 +1186,7 @@ files <- list.files(
             color = "black", check_overlap = TRUE) +
   scale_y_continuous(name = "시설수(개소)", breaks = seq(0, 100000, by = 10), 
                      limits = c(0, 50), labels = scales::comma) +
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -1213,7 +1205,7 @@ files <- list.files(
 ## 그래프_환경기초시설_시군별 처리량 -----
 환경기초시설_total %>% 
   # 연도 선택 및 도전체 합계 삭제
-  filter(연도 == 2021, 시군 != "강원도", 종류 != "합계") %>% 
+  filter(연도 == 기준연도, 시군 != "강원도", 종류 != "합계") %>% 
   # "시", "군" 삭제
   mutate(시군 = str_remove(시군, "(시|군)")) %>% 
   ggplot(aes(x = reorder(시군, -처리량/1000, FUN = sum), y = 처리량/1000, fill = 종류)) +
@@ -1223,7 +1215,7 @@ files <- list.files(
             color = "black", check_overlap = TRUE) +
   scale_y_continuous(name = "처리량(톤/일)", breaks = seq(0, 1000000, by = 20), 
                      limits = c(0, 160), labels = scales::comma) +
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -1238,14 +1230,17 @@ files <- list.files(
     legend.direction = "horizontal"
   )
 
+dev.off()
+
+
 
 ## 그래프_환경기초시설_처리량  -----
 환경기초시설_total %>% 
   # 연도 선택 및 도전체 합계 삭제
-  filter(연도 == 2021, 시군 != "강원도", 종류 != "합계") %>% 
+  filter(연도 == 기준연도, 시군 != "강원도", 종류 != "합계") %>% 
   # "시", "군" 삭제
   mutate(시군 = str_remove(시군, "(시|군)")) %>% 
-  ggplot(aes(x = reorder(시군, -처리량/1000, FUN = sum), y = 처리량/1000, fill = 종류))
+  ggplot(aes(x = reorder(시군, -처리량/1000, FUN = sum), y = 처리량/1000, fill = 종류)) +
   geom_line(data = . %>% filter(종류 == "공공하수"),
             aes(y = 처리량/11, color = 종류), 
             stat='identity', linewidth = 0.8) +
@@ -1273,7 +1268,7 @@ files <- list.files(
                                "분뇨(생활가축)" = "green", "매립장" = "violet"),
                     labels = c("소규모하수", "공공폐수", "분뇨(생활가축)", "매립장")) +
   
-  theme_calc(base_family = "notosanskr") +
+  theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
     axis.title.x = element_blank(),
@@ -1288,3 +1283,7 @@ files <- list.files(
     legend.direction = "horizontal"
   )
 
+  dev.off()
+  
+  
+  
