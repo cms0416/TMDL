@@ -1341,6 +1341,12 @@ write_xlsx(데이터통합_동리,
       is.na(CAGR) ~ 0,
       is.infinite(CAGR) ~ 0,
       .default = CAGR
+    ), 
+    증가율_19_23 = round((`2023` - `2019`) / `2019` * 100, 2),
+    증가율_19_23 = case_when(
+      is.na(증가율_19_23) ~ 0,
+      is.infinite(증가율_19_23) ~ 0,
+      .default = 증가율_19_23
     )
   ) %>%
   arrange(단위유역, 분류, 시군)

@@ -8,13 +8,18 @@ pkg <- c(
   "tidyverse", "data.table", "ggthemes", "writexl", "openxlsx",
   "showtext", "rvest", "RSelenium", "seleniumPipes", "styler", 
   "remotes", "progress", "datapasta", "sf", "sp", "janitor", "gt",
-  "psych", "ggcorrplot", "scales", "nortest"
+  "psych", "ggcorrplot", "scales", "nortest", "ggplotify", "cowplot",
+  "installr", "patchwork"
 )
 
 ### 패키지 설치
 ## install.packages 함수에 "repos" 추가
 ## (https://stackoverflow.com/questions/25721884/how-should-i-deal-with-package-xxx-is-not-available-for-r-version-x-y-z-wa)
 
+## 전체 패키지 설치
+install.packages(pkg, dependencies = TRUE, repos='http://cran.rstudio.com/')
+
+## 신규 패키지만 설치
 new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
 
 if (length(new.pkg)) {
@@ -25,9 +30,13 @@ if (length(new.pkg)) {
 library(tidyverse)
 library(data.table)
 library(ggthemes)
+library(showtext)  # 그래프에 구글 폰트 적용
+library(patchwork) # 그래프 레이아웃 관리
+library(ggplotify) # 'cowplot'을 사용하여 생성된 플롯을 'ggplot' 객체로 변환하여 정렬 가능
+library(cowplot)   # 그래프 테마, 정렬하고 배열 기능, 플롯에 주석 및 이미지 추가 등
+
 library(writexl)
 library(openxlsx)
-library(showtext)  # 그래프 구글 폰트 적용
 library(rvest)
 library(RSelenium)
 library(seleniumPipes)
@@ -43,6 +52,7 @@ library(psych)  # 상관분석
 library(ggcorrplot) # 상관관계 그래프
 library(scales)
 library(nortest) # 정규성 검증
+library(installr) # R 업데이트
 # library(extrafont)
 
 shelf("tidyverse", "data.table", "ggthemes", "writexl", "extrafont", "rvest", 

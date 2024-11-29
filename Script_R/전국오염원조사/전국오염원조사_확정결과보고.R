@@ -14,7 +14,7 @@ showtext_auto()
 
 #####  함수 정의  ##############################################################
 ## 반올림 사용자 정의 함수 로드
-source("Script_R/Function/round2func.R")
+source("Script_R/Function/func_round2.R")
 
 ##### 1. 소계 계산 함수(분류가 없는 경우)  ###### ------------------------------
 subtotal_1 <- function(data) {
@@ -774,7 +774,7 @@ pdf("E:/Coding/TMDL/전국오염원조사/Output/Plot/전국오염원조사확�
   geom_bar(stat='identity', fill = "deepskyblue3", width = 0.7) +
   geom_text(aes(label = comma(round(사육두수/1000, 2), accuracy = 0.01)), size = 3.5, 
             vjust = -0.5, color = "black", check_overlap = TRUE) +
-  scale_y_continuous(name = "사육두수(천두)", breaks = seq(0, 100, by = 10), 
+  scale_y_continuous(name = "한우 사육두수(천두)", breaks = seq(0, 100, by = 10), 
                      limits = c(0, 70), labels = scales::comma) +
   theme_few(base_family = "notosanskr") +
   theme(
@@ -799,7 +799,7 @@ pdf("E:/Coding/TMDL/전국오염원조사/Output/Plot/전국오염원조사확�
   geom_text(aes(label = comma(사육두수)), size = 3.5, vjust = -0.5, 
             color = "black", check_overlap = TRUE) +
   
-  scale_y_continuous(name = "사육두수", breaks = seq(0, 100000, by = 2000), 
+  scale_y_continuous(name = "젖소 사육두수", breaks = seq(0, 100000, by = 2000), 
                      limits = c(0, 14000), labels = scales::comma) +
   theme_few(base_family = "notosanskr") +
   theme(
@@ -823,7 +823,7 @@ pdf("E:/Coding/TMDL/전국오염원조사/Output/Plot/전국오염원조사확�
   geom_bar(stat='identity', fill = "deepskyblue3", width = 0.7) +
   geom_text(aes(label = comma(round(사육두수/1000, 2), accuracy = 0.01)), 
             size = 3.5, vjust = -0.5, color = "black", check_overlap = TRUE) +
-  scale_y_continuous(name = "사육두수(천두)", breaks = seq(0, 1000, by = 20), 
+  scale_y_continuous(name = "돼지 사육두수(천두)", breaks = seq(0, 1000, by = 20), 
                      limits = c(0, 160), labels = scales::comma) +
   theme_few(base_family = "notosanskr") +
   theme(
@@ -847,7 +847,7 @@ pdf("E:/Coding/TMDL/전국오염원조사/Output/Plot/전국오염원조사확�
   geom_bar(stat='identity', fill = "deepskyblue3", width = 0.7) +
   geom_text(aes(label = comma(사육두수*0.0001)), size = 3.5, vjust = -0.5, 
             color = "black", check_overlap = TRUE) +
-  scale_y_continuous(name = "사육두수(만두)", breaks = seq(0, 10000, by = 20), 
+  scale_y_continuous(name = "가금 사육두수(만두)", breaks = seq(0, 10000, by = 20), 
                      limits = c(0, 200), labels = scales::comma) +
   theme_few(base_family = "notosanskr") +
   theme(

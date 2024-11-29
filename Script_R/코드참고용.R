@@ -249,7 +249,7 @@ df %>% group_by(var1) %>% tally(name = "개수") # var1로 구분된 각 그룹�
 df %>% group_by(var1) %>% group_by(var2, .add = TRUE)
 
 # ++ ungroup() : 그룹 해제 -----
-df %>% group_by(var1) %>% sumamrise(total_num = n()) %>% ungroup()
+df %>% group_by(var1) %>% summarise(total_num = n()) %>% ungroup()
 
 
 # └ 4.2 그룹 데이터 프레임(group_by())에 dplyr 함수 적용하기 -------------------
