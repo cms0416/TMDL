@@ -284,6 +284,7 @@ df %>% group_by(var1) %>% summarise(group_n = n())
 
 # 5. 여러 열을 대상으로 작업 수행 --------------------------------------------
 # ++ across() -----
+# across() : 여러 열에 일괄적으로 함수 적용(변환, 요약 등)
 # across(.cols = everything(), .fns = NULL, ..., .names = NULL)
 # - .cols: 작업을 수행할 열. tidy-select 방식으로 열을 선택할 수 있다.
 # - .fns: 수행할 함수. 다음의 세 가지 방법으로 지정할 수 있다.
@@ -343,6 +344,19 @@ df %>% filter(across(starts_with("var"), ~ .x >= 5))
 # 모든 행을 대상으로 하는 것이므로 .cols는 생략 가능
 df %>% filter(.fns = !is.na(.x))
 
+
+# ++ pick() -----
+# pick() : 특정 열 선택하여 추출 또는 함수에 전달
+# 선택된 열에 across() 처럼 함수를 적용하는 것은 불가
+
+# mutate() 내에서 pick()을 사용하여 특정 열을 선택하고 변환
+df_transformed <- df %>%
+  mutate(
+    average_score = rowMeans(pick(starts_with("score")), na.rm = TRUE)
+  )
+
+# pick()을 사용하여 숫자형 열만 선택
+numeric_columns <- df %>% pick(where(is.numeric))
 
 # 6. 행 단위 작업 --------------------------------------------------------------
 # ++ rowwise() -----
@@ -491,19 +505,29 @@ df %>% pivot_wider(
 
 # ========== ▶ 중복자료 관련 ◀ =================================================
 # └ 중복자료 확인 -----
-df %>% mutate(중복자료 = ifelse(duplicated(코드), "중복", ""))
+df %>% mutate(중복자료 = ifelse(duplicated(col), "중복", ""))
 
 # └ 중복자료 개수 확인 -----
 df %>% 
-  group_by(코드) %>% 
-  mutate(중복자료 = length(코드)) %>% 
+  group_by(col) %>% 
+  mutate(중복자료 = length(col)) %>% 
   ungroup()
 
 # └ 중복자료 제거 -----
 # .keep_all = TRUE 이면 모든 열 유지, FALSE(기본값)인 경우 선택 열만 유지
-df %>% distinct(코드, .keep_all = TRUE)
-distinct_all()
+df %>% distinct(col, .keep_all = TRUE)
 
+# 여러 열을 기준으로 중복 행 제거
+df %>% distinct(pick(col1, col2), .keep_all = TRUE)
+
+# 숫자형인 경우만 중복 행 제거
+df %>% distinct(pick(where(is.numeric)))
+
+# 모든 열의 수치를 반올림 한 후 중복 행 제거
+df %>% distinct(across(everything(), round))
+
+# pick() : 특정 열 선택하여 추출 또는 함수에 전달
+# across() : 여러 열에 일괄적으로 함수 적용(변환, 요약 등)
 
 
 # ========== ▶ 결측치(NA) 관련 ◀ ===============================================
