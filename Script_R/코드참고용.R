@@ -173,6 +173,7 @@ df %>% select(new_name = old_name, everything()) # 나머지 변수도 모두 �
 
 # ++ rename() : 이름을 바꾸고, df 전체가 반환됨 -----
 df %>% rename(new_name = old_name)
+df %>% rename(new_name_1 = old_name_1, new_name_2 = old_name_2)
 
 # ++ rename_with() : 이름 변경 시 함수 적용 -----
 # .fn : 변수명 변경 시 적용하고자 하는 함수
