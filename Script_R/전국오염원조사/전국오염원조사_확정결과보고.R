@@ -4,6 +4,8 @@ library(magrittr)
 library(janitor)
 library(readxl)
 library(writexl)
+
+## 그래프 관련
 library(scales)
 library(ggthemes)
 library(showtext)
