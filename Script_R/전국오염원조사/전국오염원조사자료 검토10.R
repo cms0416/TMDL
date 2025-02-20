@@ -22,7 +22,7 @@ share3 <- share %>%
 
 #####  함수 정의  ##############################################################
 ## 반올림 사용자 정의 함수 로드
-source("Script_R/Function/round2func.R")
+source("Script_R/Function/func_round2.R")
 
 ##### 1. 소계 계산 함수(분류가 없는 경우)  -------------------------------------
 subtotal_1 <- function(data) {

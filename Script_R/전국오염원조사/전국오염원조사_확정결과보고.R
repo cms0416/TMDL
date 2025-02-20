@@ -283,7 +283,7 @@ files <- list.files(
     "종교용지", "사적지", "묘지", "잡종지"
   )) %>% 
   # 강원도 외 타 시도 제외
-  filter(시도 == "강원도") %>% 
+  filter(시도 %in% c("강원도", "강원특별자치도")) %>% 
   # 지목별 면적 및 연도 숫자로 지정
   mutate(across(c(연도, 총면적:잡종지), as.numeric)) %>%
   mutate(
@@ -557,7 +557,7 @@ files <- list.files(
 ##**************************************************************************** ##
 
 ### 그래프 작성 기준 연도 설정
-기준연도 <- list(2022)
+기준연도 <- list(2023)
 
 ### 그래프 pdf파일 생성 경로 및 사이즈 설정
 pdf("E:/Coding/TMDL/전국오염원조사/Output/Plot/전국오염원조사확정결과_그래프(8.2x4.3).pdf",
@@ -850,7 +850,7 @@ pdf("E:/Coding/TMDL/전국오염원조사/Output/Plot/전국오염원조사확�
   geom_text(aes(label = comma(사육두수*0.0001)), size = 3.5, vjust = -0.5, 
             color = "black", check_overlap = TRUE) +
   scale_y_continuous(name = "가금 사육두수(만두)", breaks = seq(0, 10000, by = 20), 
-                     limits = c(0, 200), labels = scales::comma) +
+                     limits = c(0, 300), labels = scales::comma) +
   theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
@@ -951,8 +951,8 @@ pdf("E:/Coding/TMDL/전국오염원조사/Output/Plot/전국오염원조사확�
   ggplot(aes(x = reorder(시군, -폐수량), y = 폐수량, fill = 구분)) +
   geom_bar(position = position_dodge(0.8),
            stat='identity', width = 0.7) +
-  scale_y_continuous(name = "폐수 발생·방류량(톤/일)", breaks = seq(0, 100000, by = 10000), 
-                     limits = c(0, 70000), labels = scales::comma) +
+  scale_y_continuous(name = "폐수 발생·방류량(톤/일)", breaks = seq(0, 100000, by = 5000), 
+                     limits = c(0, 36000), labels = scales::comma) +
   theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),
@@ -986,7 +986,7 @@ pdf("E:/Coding/TMDL/전국오염원조사/Output/Plot/전국오염원조사확�
   geom_text(aes(y = 총면적, label = comma(총면적)), size = 3.5, vjust = -0.5,
             check_overlap = TRUE) +
   scale_y_continuous(name = "토지면적(㎢)", breaks = seq(0, 100000, by = 500), 
-                     limits = c(0, 1800), labels = scales::comma) +
+                     limits = c(0, 1900), labels = scales::comma) +
   theme_few(base_family = "notosanskr") +
   theme(
     line = element_line(linewidth = 0.1),

@@ -12,7 +12,7 @@ showtext_auto()
 
 
 ##########  파일 불러오기  #####################################################
-수질_원본 <- read_excel("수질 분석/총량측정망_강원_2007_2024.xlsx")
+수질_원본 <- read_excel("수질분석/총량측정망_강원_2007_2024.xlsx")
 오염원 <- read_excel("전국오염원조사/Output/전국오염원조사 자료 정리(강원도전체시군기준).xlsx")
 
 
@@ -88,7 +88,7 @@ showtext_auto()
 ##########  유역별 수질 그래프  ################################################
 
 ##### BOD 그래프 ---------------------------------------------------------------
-pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측정결과 평가/총량측정망_BOD_그래프(8.4x4).pdf",
+pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정결과 평가/총량측정망_BOD_그래프(8.4x4).pdf",
     width = 8.4, height = 4)
 
 ## 남한강 수계 + 섬강 수계 별 박스플롯 BOD
@@ -103,7 +103,7 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
               shape = 21, alpha = 0.6, size = 2.3,
               position = position_jitter(0.2)
   ) +
-  scale_y_log10(name = "BOD(mg/L)", expand = expansion(add = c(0.3, 0.3))) +
+  scale_y_continuous(trans='log10',limits=c(0.2, 10)) +
   theme_bw(base_family = "notosanskr", base_size = 14) +
   theme(
     axis.title.x = element_blank(),
@@ -129,7 +129,7 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
               shape = 21, alpha = 0.6, size = 2.3,
               position = position_jitter(0.2)
   ) +
-  scale_y_log10(name = "BOD(mg/L)", expand = expansion(add = c(0.3, 0.8))) +
+  scale_y_continuous(trans='log10',limits=c(0.2, 10)) +
   theme_bw(base_family = "notosanskr", base_size = 14) +
   theme(
     axis.title.x = element_blank(),
@@ -154,7 +154,7 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
               shape = 21, alpha = 0.6, size = 2.3,
               position = position_jitter(0.2)
   ) +
-  scale_y_log10(name = "BOD(mg/L)", expand = expansion(add = c(0.3, 0.55))) +
+  scale_y_continuous(trans='log10',limits=c(0.2, 10)) +
   theme_bw(base_family = "notosanskr", base_size = 14) +
   theme(
     axis.title.x = element_blank(),
@@ -171,7 +171,7 @@ dev.off()
 
 
 ##### T-P 그래프 ---------------------------------------------------------------
-pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측정결과 평가/총량측정망_TP_그래프(8.4x4).pdf",
+pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정결과 평가/총량측정망_TP_그래프(8.4x4).pdf",
     width = 8.4, height = 4)
 
 ## 남한강 수계 + 섬강 수계 별 박스플롯 T-P
@@ -186,7 +186,7 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
               shape = 21, alpha = 0.6, size = 2.3,
               position = position_jitter(0.2)
   ) +
-  scale_y_log10(name = "T-P(mg/L)") +
+  scale_y_continuous(trans='log10',limits=c(0.003, 10)) +
   theme_bw(base_family = "notosanskr", base_size = 14) +
   theme(
     axis.title.x = element_blank(),
@@ -212,7 +212,7 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
               shape = 21, alpha = 0.6, size = 2.3,
               position = position_jitter(0.2)
   ) +
-  scale_y_log10(name = "T-P(mg/L)", expand = expansion(add = c(0, 0.7))) +
+  scale_y_continuous(trans='log10',limits=c(0.003, 10)) +
   theme_bw(base_family = "notosanskr", base_size = 14) +
   theme(
     axis.title.x = element_blank(),
@@ -237,7 +237,7 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
               shape = 21, alpha = 0.6, size = 2.3,
               position = position_jitter(0.2)
   ) +
-  scale_y_log10(name = "T-P(mg/L)", expand = expansion(add = c(0, 0.5))) +
+  scale_y_continuous(trans='log10',limits=c(0.003, 10)) +
   theme_bw(base_family = "notosanskr", base_size = 14) +
   theme(
     axis.title.x = element_blank(),
@@ -255,7 +255,7 @@ dev.off()
 
 ##########  유역별 오염원 현황 그래프  #########################################
 
-pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측정결과 평가/2024_상반기_오염원(5x5).pdf",
+pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정결과 평가/2024_하반기_오염원(5x5).pdf",
     width = 5, height = 5)
 
 ## 그래프_생활계_인구 -----
@@ -266,7 +266,7 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
   mutate(단위유역 = fct_reorder(단위유역, `2023`, .desc = T)) %>%
   ggplot(aes(x = 단위유역, y = `2023` / 10000)) +
   geom_bar(stat='identity', width = 0.6, fill = "deepskyblue3") +
-  scale_y_continuous(name = "인구(만명)", expand = expansion(add = c(0, 2)), 
+  scale_y_continuous(name = "인구(만명)", expand = expansion(add = c(0, 1)),
                      breaks = seq(0, 35, by = 5)) +
   ggtitle("인구") +
   theme_bw(base_family = "notosanskr", base_size = 14) +
@@ -290,7 +290,8 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
   ggplot(aes(x = 단위유역, y = `2022` / 10000)) +
   geom_bar(stat='identity', width = 0.6, fill = "deepskyblue3") +
   # expansion() : 축 범위 확장
-  scale_y_continuous(name = "물사용량(만㎥/일)", expand = expansion(add = c(0, 2)),
+  scale_y_continuous(name = "물사용량(만㎥/일)", 
+                     expand = expansion(add = c(0, 2)),
                      breaks = seq(0, 30, by = 5)) +
   ggtitle("물사용량") +
   theme_bw(base_family = "notosanskr", base_size = 14) +
@@ -314,7 +315,8 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
   ggplot(aes(x = 단위유역, y = `2023` / 10000)) +
   geom_bar(stat='identity', width = 0.6, fill = "deepskyblue3") +
   # expansion() : 축 범위 확장
-  scale_y_continuous(name = "한우(만두)", expand = expansion(add = c(0, 1)),
+  scale_y_continuous(name = "한우(만두)",
+                     expand = expansion(add = c(0, 0.6)),
                      breaks = seq(0, 5, by = 1)) +
   ggtitle("한우") +
   theme_bw(base_family = "notosanskr", base_size = 14) +
@@ -338,7 +340,8 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
   ggplot(aes(x = 단위유역, y = `2023` / 10000)) +
   geom_bar(stat='identity', width = 0.6, fill = "deepskyblue3") +
   # expansion() : 축 범위 확장
-  scale_y_continuous(name = "젖소(만두)", expand = expansion(add = c(0, 0.07)), 
+  scale_y_continuous(name = "젖소(만두)",  
+                     expand = expansion(add = c(0, 0.05)), 
                      breaks = seq(0, 2, by = 0.2)) +
   ggtitle("젖소") +
   theme_bw(base_family = "notosanskr", base_size = 14) +
@@ -362,7 +365,8 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
   ggplot(aes(x = 단위유역, y = `2023` / 10000)) +
   geom_bar(stat='identity', width = 0.6, fill = "deepskyblue3") +
   # expansion() : 축 범위 확장
-  scale_y_continuous(name = "돼지(만두)", expand = expansion(add = c(0, 1)),
+  scale_y_continuous(name = "돼지(만두)",  
+                     expand = expansion(add = c(0, 1.5)),
                      breaks = seq(0, 20, by = 2)) +
   ggtitle("돼지") +
   theme_bw(base_family = "notosanskr", base_size = 14) +
@@ -386,7 +390,8 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
   ggplot(aes(x = 단위유역, y = `2023` / 10000)) +
   geom_bar(stat='identity', width = 0.6, fill = "deepskyblue3") +
   # expansion() : 축 범위 확장
-  scale_y_continuous(name = "가금(만두)", expand = expansion(add = c(0, 7)), 
+  scale_y_continuous(name = "가금(만두)", 
+                     expand = expansion(add = c(0, 8)), 
                      breaks = seq(0, 200, by = 20)) +
   ggtitle("가금") +
   theme_bw(base_family = "notosanskr", base_size = 14) +
@@ -411,7 +416,7 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
   geom_bar(stat='identity', width = 0.6, fill = "deepskyblue3") +
   # expansion() : 축 범위 확장
   scale_y_continuous(name = "산업계 업소수(개소)", 
-                     expand = expansion(add = c(0, 50)), 
+                     expand = expansion(add = c(0, 10)), 
                      breaks = seq(0, 300, by = 50)) +
   ggtitle("산업계 업소수") +
   theme_bw(base_family = "notosanskr", base_size = 14) +
@@ -435,8 +440,8 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
   geom_bar(stat='identity', width = 0.6, fill = "deepskyblue3") +
   # expansion() : 축 범위 확장
   scale_y_continuous(name = "산업계 폐수방류량(천㎥/일)", 
-                     expand = expansion(add = c(0, 1)), 
-                     breaks = seq(0, 8, by = 1)) +
+                     expand = expansion(add = c(0, 0.7)), 
+                     breaks = seq(0, 10, by = 1)) +
   ggtitle("산업계 폐수방류량") +
   theme_bw(base_family = "notosanskr", base_size = 14) +
   theme(
@@ -448,7 +453,6 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
     axis.text.y = element_text(face = "bold"),
     panel.border = element_rect(linewidth = 0.5, fill = NA)
   )
-
 
 ## 그래프_토지계_논(답) 면적 -----
 오염원현황 %>% 
@@ -483,7 +487,7 @@ pdf("E:/Coding/TMDL/수질 분석/Output/Plot/총량관리 수질측정망 측�
   ggplot(aes(x = 단위유역, y = `2023`)) +
   geom_bar(stat='identity', width = 0.6, fill = "deepskyblue3") +
   # expansion() : 축 범위 확장
-  scale_y_continuous(name = "전(㎢)", expand = expansion(add = c(0, 20)),
+  scale_y_continuous(name = "전(㎢)", expand = expansion(add = c(0, 6)),
                      breaks = seq(0, 120, by = 20)) +
   ggtitle("전(밭) 면적") +
   theme_bw(base_family = "notosanskr", base_size = 14) +
