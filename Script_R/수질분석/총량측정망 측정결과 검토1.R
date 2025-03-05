@@ -14,7 +14,7 @@ showtext_auto()
 ##########  파일 불러오기  #####################################################
 수질_원본 <- read_excel("수질분석/총량측정망_강원_2007_2024.xlsx")
 오염원 <- read_excel("전국오염원조사/Output/전국오염원조사 자료 정리(강원도전체시군기준).xlsx")
-
+기준년도 <- 2024
 
 ##########  수질 데이터 정리  ##################################################
 수질_정리 <- 수질_원본 %>% 
@@ -40,7 +40,7 @@ showtext_auto()
 
 ## 유역별 평균 값 및 수질등급 정리
 유역별평균 <- 수질_정리 %>% 
-  filter(연도 %in% c(2023, 2024), 월 %in% c(1:6)) %>% 
+  filter(연도 %in% c((기준년도-2):기준년도), 월 %in% c(1:6)) %>% 
   select(-c(일자, 월, 계절)) %>% 
   group_by(총량지점명, 연도) %>% 
   summarise(across(c(BOD, TP), mean), .groups = "drop") %>% 
@@ -88,12 +88,12 @@ showtext_auto()
 ##########  유역별 수질 그래프  ################################################
 
 ##### BOD 그래프 ---------------------------------------------------------------
-pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정결과 평가/총량측정망_BOD_그래프(8.4x4).pdf",
-    width = 8.4, height = 4)
+pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정결과 평가/총량측정망_BOD_그래프(7.5x3.5).pdf",
+    width = 7.5, height = 3.5)
 
 ## 남한강 수계 + 섬강 수계 별 박스플롯 BOD
 수질_정리 %>%
-  filter(연도 == 2024,
+  filter(연도 >= (기준년도-2),
          총량지점명 %in% c("골지A", "오대A", "주천A", "평창A", 
                       "옥동A", "한강A", "섬강A", "섬강B")) %>% 
   ggplot(aes(x = 총량지점명, y = BOD)) +
@@ -103,7 +103,7 @@ pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정
               shape = 21, alpha = 0.6, size = 2.3,
               position = position_jitter(0.2)
   ) +
-  scale_y_continuous(trans='log10',limits=c(0.2, 10)) +
+  scale_y_continuous(name = 'BOD (mg/L)', trans='log10',limits=c(0.15, 10)) +
   theme_bw(base_family = "notosanskr", base_size = 14) +
   theme(
     axis.title.x = element_blank(),
@@ -119,7 +119,7 @@ pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정
 
 ## 북한강 수계, 홍천A, 한탄A 유역 별 박스플롯 BOD
 수질_정리 %>%
-  filter(연도 == 2024,
+  filter(연도 >= (기준년도-2),
          총량지점명 %in% c("북한A", "북한B", "소양A", "인북A", 
                       "소양B", "북한C", "홍천A", "한탄A")) %>% 
   ggplot(aes(x = 총량지점명, y = BOD)) +
@@ -129,7 +129,7 @@ pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정
               shape = 21, alpha = 0.6, size = 2.3,
               position = position_jitter(0.2)
   ) +
-  scale_y_continuous(trans='log10',limits=c(0.2, 10)) +
+  scale_y_continuous(name = 'BOD (mg/L)', trans='log10',limits=c(0.15, 10)) +
   theme_bw(base_family = "notosanskr", base_size = 14) +
   theme(
     axis.title.x = element_blank(),
@@ -144,7 +144,7 @@ pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정
 
 ## 타시도 관할 및 낙동강 수계 유역 별 박스플롯 BOD
 수질_정리 %>%
-  filter(연도 == 2024,
+  filter(연도 >= (기준년도-2),
          총량지점명 %in% c("제천A", "한강B", "한강D", "북한D", 
                       "임진A", "한탄B", "낙본A")) %>% 
   ggplot(aes(x = 총량지점명, y = BOD)) +
@@ -154,7 +154,7 @@ pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정
               shape = 21, alpha = 0.6, size = 2.3,
               position = position_jitter(0.2)
   ) +
-  scale_y_continuous(trans='log10',limits=c(0.2, 10)) +
+  scale_y_continuous(name = 'BOD (mg/L)', trans='log10',limits=c(0.15, 10)) +
   theme_bw(base_family = "notosanskr", base_size = 14) +
   theme(
     axis.title.x = element_blank(),
@@ -171,12 +171,12 @@ dev.off()
 
 
 ##### T-P 그래프 ---------------------------------------------------------------
-pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정결과 평가/총량측정망_TP_그래프(8.4x4).pdf",
-    width = 8.4, height = 4)
+pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정결과 평가/총량측정망_TP_그래프(7.5x3.5).pdf",
+    width = 7.5, height = 3.5)
 
 ## 남한강 수계 + 섬강 수계 별 박스플롯 T-P
 수질_정리 %>%
-  filter(연도 == 2024,
+  filter(연도 >= (기준년도-2),
          총량지점명 %in% c("골지A", "오대A", "주천A", "평창A", 
                       "옥동A", "한강A", "섬강A", "섬강B")) %>% 
   ggplot(aes(x = 총량지점명, y = TP)) +
@@ -186,7 +186,7 @@ pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정
               shape = 21, alpha = 0.6, size = 2.3,
               position = position_jitter(0.2)
   ) +
-  scale_y_continuous(trans='log10',limits=c(0.003, 10)) +
+  scale_y_continuous(name = 'T-P (mg/L)', trans='log10',limits=c(0.003, 10)) +
   theme_bw(base_family = "notosanskr", base_size = 14) +
   theme(
     axis.title.x = element_blank(),
@@ -202,7 +202,7 @@ pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정
 
 ## 북한강 수계, 홍천A, 한탄A 유역 별 박스플롯 T-P
 수질_정리 %>%
-  filter(연도 == 2024,
+  filter(연도 >= (기준년도-2),
          총량지점명 %in% c("북한A", "북한B", "소양A", "인북A", 
                       "소양B", "북한C", "홍천A", "한탄A")) %>% 
   ggplot(aes(x = 총량지점명, y = TP)) +
@@ -212,7 +212,7 @@ pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정
               shape = 21, alpha = 0.6, size = 2.3,
               position = position_jitter(0.2)
   ) +
-  scale_y_continuous(trans='log10',limits=c(0.003, 10)) +
+  scale_y_continuous(name = 'T-P (mg/L)', trans='log10',limits=c(0.003, 10)) +
   theme_bw(base_family = "notosanskr", base_size = 14) +
   theme(
     axis.title.x = element_blank(),
@@ -227,7 +227,7 @@ pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정
 
 ## 타시도 관할 및 낙동강 수계 유역 별 박스플롯 T-P
 수질_정리 %>%
-  filter(연도 == 2024,
+  filter(연도 >= (기준년도-2),
          총량지점명 %in% c("제천A", "한강B", "한강D", "북한D", 
                       "임진A", "한탄B", "낙본A")) %>% 
   ggplot(aes(x = 총량지점명, y = TP)) +
@@ -237,7 +237,7 @@ pdf("E:/Coding/TMDL/수질분석/Output/Plot/총량관리 수질측정망 측정
               shape = 21, alpha = 0.6, size = 2.3,
               position = position_jitter(0.2)
   ) +
-  scale_y_continuous(trans='log10',limits=c(0.003, 10)) +
+  scale_y_continuous(name = 'T-P (mg/L)', trans='log10',limits=c(0.003, 10)) +
   theme_bw(base_family = "notosanskr", base_size = 14) +
   theme(
     axis.title.x = element_blank(),
