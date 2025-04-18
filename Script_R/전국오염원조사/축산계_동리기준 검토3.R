@@ -11,19 +11,18 @@ library(progress)
 
 
 #####  축산계 자료 불러오기  ###################################################
-축산계_원본 <- read_excel("전국오염원조사/축산계/2022년기준_전국오염원_조사자료_축산계_가축분뇨현황.xlsx",
+축산계_원본 <- read_excel("전국오염원조사/축산계/2023년기준_전국오염원_조사자료_축산계_가축분뇨현황.xlsx",
                         skip = 6, col_names = F) %>% 
-  mutate(연도 = 2022, .before = 1)
+  mutate(연도 = 2023, .before = 1)
 
 share <- read_excel("전국오염원조사/단위유역별 점유율.xlsx") %>% 
   filter(축산계 != 0) %>% 
-  group_by(주소, 단위유역, 시군) %>%
+  group_by(동리코드, 단위유역, 시군) %>%
   summarise(축산계 = sum(축산계) / 100, .groups = "drop")
 
 share_2 <- share %>% 
   filter(축산계 > 0.98) %>% 
-  select(주소, 단위유역) %>% 
-  rename(동리코드 = 주소)
+  select(동리코드, 단위유역)
 
 #####  데이터 정리  ############################################################
 
@@ -103,7 +102,7 @@ for (i in 1:nrow(address_ind)) {
   place_list <- GET(
     url = "https://dapi.kakao.com/v2/local/search/address.json",
     query = list(query = address_list[i]),
-    add_headers(Authorization = "KakaoAK 9e9a85a9ec8362e009da2f7bc4b3a09c")
+    add_headers(Authorization = "KakaoAK 0c7cd88bfcd65c351a4af41ef4cd25fa")
   ) %>%
     content(as = "text") %>%
     fromJSON()
