@@ -200,7 +200,8 @@ names(df) <- c("x4", "x2", "x5")
 
 
 # └ 2.3 relocate() : 열의 위치(순서) 변경 --------------------------------------
-df %>% relocate(var5)                             # var5를 맨 앞으로 이동
+df %>% relocate(var5)                             # var5를 첫번째 열로 이동
+df %>% relocate(var5, .after = last_col())        # var5를 마지막 열로 이동
 df %>% relocate(var5, .after = var2)              # var5를 var2 뒤로 이동
 df %>% relocate(var5, .before = var3)             # var5를 var3 앞으로 이동
 df %>% relocate(starts_with("a"), .after = var2)  # 이름에 a가 포함되는 변수를 var2 뒤로 이동
