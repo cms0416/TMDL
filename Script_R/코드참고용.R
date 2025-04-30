@@ -573,18 +573,22 @@ str_count(string, pattern)
 # 2. Subset Strings ----------------------------------------------------
 # ++ str_sub() -----
 str_sub(string, start = 1L, end = -1L)
+str_sub(fruit, 1, 3); str_sub(fruit, -2)
 
 # ++ str_subset() -----
 str_subset(string, pattern, negate = FALSE)
+str_subset(fruit, "p")
 
 # ++ str_extract() Return the first pattern match found in each string, as a vector. -----
 # Also str_extract_all() to return every pattern
 str_extract(string, pattern)
 str_extract_all(string, pattern)
+str_extract(fruit, "[aeiou]")
 
 # ++ str_match() -----
 str_match(string, pattern)
-
+str_match_all(string, pattern)
+str_match(sentences, "(a|the) ([^ +])")
 
 # 3. Join and Split ----------------------------------------------------
 # ++ str_c() -----
@@ -619,6 +623,48 @@ str_glue(..., .sep = "", .envir = parent.frame())
 str_glue_data(.x, ..., .sep = "", .envir =
                 parent.frame(), .na = "NA")
 
+# 4. Manage Lengths ----------------------------------------------------
+# ++ str_length() -----
+str_length(string)
+
+# ++ str_pad() -----
+str_pad(string, width, side = c("left", "right", "both"), pad = " ")
+str_pad(fruit, 17)
+
+# ++ str_trim() -----
+str_trim(string, side = c("both", "left", "right"))
+str_trim(str_pad(fruit, 17))
+
+# ++ str_trunc()
+str_trunc(string, width, side = c("right", "left", "center"), ellipsis = "...")
+str_trunc(sentences, 6)
+
+# ++ str_squish()
+str_squish(string)
+str_squish(str_pad(fruit, 17, "both"))
+
+# 5. Mutate Strings ----------------------------------------------------
+# ++ str_sub() <- value
+str_sub(fruit, 1, 3) <- "str"
+
+# ++ str_replace() -----
+str_replace(string, pattern, replacement)
+str_replace(fruit, "p", "-")
+
+# ++ str_replace_all()
+str_replace_all(string, pattern, replacement)
+str_replace_all(fruit, "p", "-")
+
+# 6. Order Strings ----------------------------------------------------
+# ++ str_order()
+str_order(x, decreasing = FALSE, na_last = TRUE, 
+          locale = "en", numeric = FALSE, ...)
+str_order(fruit)
+
+# ++ str_sort()
+str_sort(x, decreasing = FALSE, na_last = TRUE, 
+         locale = "en", numeric = FALSE, ...)
+str_sort(fruit)
 
 
 # ========== ▶ 그래프 관련 ◀ ===================================================

@@ -20,22 +20,24 @@ source("Script_R/Function/func_round2.R")
 
 #####  1-1. 데이터 불러오기  ###################################################
 
-# 데이터 경로지정 및 데이터 목록
+## 데이터 경로지정 및 데이터 목록
 files <- list.files(
   path = "전국오염원조사/기준배출수질/환경기초시설 데이터",
   pattern = "*.xls", full.names = T
 )
 
-# 경로지정된 파일 합치기
+## 경로지정된 파일 불러오기(파일이 여러개인 경우 병합)
 시설현황_원본 <- files %>%
   # map_dfr : 행 병합(row-binding)하여 작성된 데이터프레임 반환
-  map_dfr(read_excel, sheet = 1, skip = 3, col_names = F)
+  map_dfr(read_excel, sheet = "환경기초시설", skip = 3, col_names = F)
 
+## 파일 불러오기
 # 시설현황_원본 <- read_excel(
-#   "전국오염원조사/환경기초시설/2023년기준_전국오염원_조사자료_환경기초시설_(가확정).xlsx",
+#   "전국오염원조사/환경기초시설/2023년기준_전국오염원_조사자료_환경기초시설.xlsx",
 #   sheet = 1, skip = 3, col_names = F
 # )
-  
+
+## 환경기초시설별 단위유역 현황 자료 불러오기
 stp_유역 <- read_excel(
   "전국오염원조사/환경기초시설/환경기초시설 현황/환경기초시설_현황.xlsx"
 ) %>%
@@ -196,30 +198,15 @@ write_xlsx(
 
 #####  2-1. 데이터 불러오기  ###################################################
 
-
-## 데이터 경로지정 및 데이터 목록
-files <- list.files(
-  path = "전국오염원조사/기준배출수질/환경기초시설 데이터",
-  pattern = "*.xlsx", full.names = T
-)
-
-## *****  파일이 여러개인 경우  ************************************************
-# 경로지정된 파일 합치기
+## 경로지정된 파일 불러오기(파일이 여러개인 경우 병합)
 data_원본 <- files %>%
   # map_dfr : 행 병합(row-binding)하여 작성된 데이터프레임 반환
   map_dfr(~ {
-    data <- read_excel(.x, sheet = 5, skip = 3, col_names = F) 
+    data <- read_excel(.x, sheet = "방류량", skip = 3, col_names = F) 
       # 데이터 형식이 달라서 합쳐지지 않는 문제 해결
-      # mutate(across(c(1:55), as.character))
+      # mutate(across(everything(), as.character))
   })
-## *****************************************************************************
 
-
-## *****  파일이 하나인 경우  **************************************************
-data_원본 <- read_excel(
-  files, sheet = 5, skip = 3, col_names = F
-)
-## *****************************************************************************
 
 ## 데이터 정리
 data_정리 <- data_원본 %>%
@@ -234,84 +221,37 @@ data_정리 <- data_원본 %>%
   mutate(across(c(유량:TP), as.numeric))
 
 
-#####  2-2. BOD 정규성 검증  ###################################################
+#####  2-2. 정규성 검증  #######################################################
 
-## BOD 데이터 로그 변환
-BOD_data <- data_정리 %>%
-  select(처리시설명, BOD) %>%
-  # BOD 결측값 및 0값 제거
-  # (로그 함수는 0에 대해 정의되지 않기 때문에 로그 변환 전 0 값 제거)
-  filter(!is.na(BOD), BOD != 0) %>%
-  # BOD 수치 로그값 추가
-  mutate(ln_BOD = log(BOD, base = exp(1)))
-
-## 데이터 측정 횟수 확인
-BOD_측정횟수 <- BOD_data %>%
-  count(처리시설명) %>%
-  rename(BOD_개수 = n)
-
-## 정규성 검증
-BOD_정규성검증 <- BOD_data %>%
-  group_by(처리시설명) %>%
-  reframe(
-    # 정규성 검정을 위해 Kolmogorov-Smirnov 방법 적용 시 데이터 양이 부족하여 
-    # 모수를 정확히 추정하는 것이 어렵고, 추정된 값이 모집단을 충분히 대표하지 
-    # 못한다고 판단될 경우 Lilliefors 수정이 적용된 정규성 검정 방법을 
-    # 적용하는것이 더 적합할 것으로 판단됨
-    # 변경된 지침에 따라 측정횟수가 347개 이상으로 데이터가 충분한 경우는 
-    # 정규성 검정을 따로 실행할 필요가 없음
-    # 따라서 Kolmogorov-Smirnov(ks.test 함수)가 아닌
-    # Lilliefors 테스트(nortest::lillie.test 함수) 적용
-    
-    # Kolmogorov-Smirnov test (Liliefors test)
-    KS = map(., ~ lillie.test(ln_BOD)) %>% map_dbl("p.value"),
-    # Shapiro-Wilk test
-    SW = map(., ~ shapiro.test(ln_BOD)) %>% map_dbl("p.value"),
-    # Anderson-Darling test
-    AD = map(., ~ ad.test(ln_BOD)) %>% map_dbl("p.value")
-  ) %>%
-  distinct_all() %>%
-  mutate(BOD_정규성 = ifelse(KS > 0.05 | SW > 0.05 | AD > 0.05, "정규성", "비정규성"))
-
-
-#####  2-2. T-P 정규성 검증  ###################################################
-
-## T-P 데이터 로그 변환
-TP_data <- data_정리 %>%
-  select(처리시설명, TP) %>%
-  # TP 결측값 및 0값 제거
-  # (로그 함수는 0에 대해 정의되지 않기 때문에 로그 변환 전 0 값 제거)
-  filter(!is.na(TP), TP != 0) %>%
-  # TP 수치 로그값 추가
-  mutate(ln_TP = log(TP, base = exp(1)))
-
-## 데이터 측정 횟수 확인
-TP_측정횟수 <- TP_data %>%
-  count(처리시설명) %>%
-  rename(TP_개수 = n)
+## 정규성 검증 함수 정의
+run_normality_tests <- function(df, raw_col) {
+  log_col    <- paste0("ln_", raw_col)
+  result_col <- paste0(raw_col, "_정규성")
+  
+  df %>%
+    # NA 및 0 값 제거, 로그 변환
+    filter(!is.na(.data[[raw_col]]), .data[[raw_col]] != 0) %>%
+    mutate(!!log_col := log(.data[[raw_col]])) %>%
+    group_by(처리시설명) %>%
+    # 정규성 검증
+    # - Shapiro-wilk, Anderson-Darling, Kolmogorov-Smirnov 3가지 방법 중 
+    #   1개 이상 정규성이면 정규성으로 판단
+    # - ks.test는 모집단 평균(μ), 표준편차(σ)를 “사전 고정”된 모수로 가정하므로,
+    #   표본에서 추정한 μ̂, σ̂를 사용할 경우 p-value가 과대·과소 평가될 수 있음
+    # - 따라서 모수추정 보정을 포함한 Lilliefors 테스트(nortest::lillie.test)를 사용
+    summarise(
+      KS            = lillie.test(.data[[log_col]])$p.value,
+      SW            = shapiro.test(.data[[log_col]])$p.value,
+      AD            = ad.test(.data[[log_col]])$p.value,
+      !!result_col  := if_else(KS > 0.05 | SW > 0.05 | AD > 0.05,
+                               "정규성", "비정규성"),
+      .groups = "drop"
+    )
+}
 
 ## 정규성 검증
-TP_정규성검증 <- TP_data %>%
-  group_by(처리시설명) %>%
-  reframe(
-    # 정규성 검정을 위해 Kolmogorov-Smirnov 방법 적용 시 데이터 양이 부족하여 
-    # 모수를 정확히 추정하는 것이 어렵고, 추정된 값이 모집단을 충분히 대표하지 
-    # 못한다고 판단될 경우 Lilliefors 수정이 적용된 정규성 검정 방법을 
-    # 적용하는것이 더 적합할 것으로 판단됨
-    # 변경된 지침에 따라 측정횟수가 347개 이상으로 데이터가 충분한 경우는 
-    # 정규성 검정을 따로 실행할 필요가 없음
-    # 따라서 Kolmogorov-Smirnov(ks.test 함수)가 아닌
-    # Lilliefors 테스트(nortest::lillie.test 함수) 적용
-    
-    # Kolmogorov-Smirnov test (Liliefors test)
-    KS = map(., ~ lillie.test(ln_TP)) %>% map_dbl("p.value"),
-    # Shapiro-Wilk test
-    SW = map(., ~ shapiro.test(ln_TP)) %>% map_dbl("p.value"),
-    # Anderson-Darling test
-    AD = map(., ~ ad.test(ln_TP)) %>% map_dbl("p.value")
-  ) %>%
-  distinct_all() %>%
-  mutate(TP_정규성 = ifelse(KS > 0.05 | SW > 0.05 | AD > 0.05, "정규성", "비정규성"))
+BOD_정규성검증 <- run_normality_tests(data_정리, raw_col = "BOD")
+TP_정규성검증  <- run_normality_tests(data_정리, raw_col = "TP")
 
 
 
@@ -322,76 +262,69 @@ TP_정규성검증 <- TP_data %>%
 
 #####  3-1. 기준배출수질(가)  ##############################################
 
-## BOD 기준배출수질(가)
-BOD_기준배출수질_가 <- BOD_data %>%
-  group_by(처리시설명) %>%
-  reframe(
-    # 변환평균
-    mean_BOD = mean(ln_BOD),
-    # 변환표준편차
-    sd_BOD = sd(ln_BOD),
-    # 기준배출수질 = e^(변환평균+1.645×변환표준편차)
-    BOD_가 = exp(1)^(mean_BOD + sd_BOD * 1.645)
-  )
+## 시행규칙 별표3 가 방식(로그정규분포) 기준배출수질 함수
+calc_parametric_limit <- function(df, raw_col) {
+  log_col    <- paste0("ln_", raw_col)
+  mean_col   <- paste0(raw_col, "_mean")
+  sd_col     <- paste0(raw_col, "_sd")
+  result_col <- paste0(raw_col, "_가")
+  
+  df %>%
+    # NA 및 0 값 제거, 로그 변환
+    filter(!is.na(.data[[raw_col]]), .data[[raw_col]] != 0) %>%
+    mutate(!!log_col := log(.data[[raw_col]])) %>%
+    group_by(처리시설명) %>%
+    summarise(
+      !!mean_col   := mean(.data[[log_col]], na.rm = TRUE),
+      !!sd_col     := sd(.data[[log_col]],   na.rm = TRUE),
+      !!result_col := exp(
+        mean(.data[[log_col]], na.rm = TRUE) +
+          1.645 * sd(.data[[log_col]], na.rm = TRUE)
+      ),
+      .groups = "drop"
+    )
+}
 
-## T-P 기준배출수질(가)
-TP_기준배출수질_가 <- TP_data %>%
-  group_by(처리시설명) %>%
-  reframe(
-    # 변환평균
-    mean_TP = mean(ln_TP),
-    # 변환표준편차
-    sd_TP = sd(ln_TP),      
-    # 기준배출수질 = e^(변환평균+1.645×변환표준편차)
-    TP_가 = exp(1)^(mean_TP + sd_TP * 1.645)
-  )
+## 기준배출수질(가)
+BOD_기준배출수질_가 <- calc_parametric_limit(data_정리, "BOD")
+TP_기준배출수질_가  <- calc_parametric_limit(data_정리,  "TP")
 
 
 #####  3-2. 기준배출수질(나)  ##############################################
 
-## BOD 기준배출수질(나)
-BOD_기준배출수질_나 <- BOD_data %>%
-  group_by(처리시설명) %>%
-  # 데이터를 오름차순으로 정렬
-  arrange(BOD, .by_group = TRUE) %>%
-  reframe(
-    count = n(),                           # 데이터 갯수
-    a = floor(1 + 0.95 * (count - 1)),     # 1+0.95×(측정횟수-1)의 정수부분
-    b = (1 + 0.95 * (count - 1)) - a,      # 1+0.95×(측정횟수-1)의 소수부분
-    Xa = nth(BOD, a),                      # nth(): 변수의 a번째 행 출력
-    Xa1 = nth(BOD, a + 1),                 # nth(): 변수의 a+1번째 행 출력
-    BOD_나 = (1 - b) * Xa + b * Xa1        # 기준배출수질 = (1-b)×Xa+b×X(a+1)
-  )
+# 시행규칙 별표3 나 방식(비정규분포) 기준배출수질 계산 함수
+calc_nonparametric_limit <- function(df, raw_col) {
+  result_col <- paste0(raw_col, "_나")
+  count_col  <- paste0(raw_col, "_개수")
+  max_col    <- paste0(raw_col, "_최대")
+  
+  df %>%
+    # NA 및 0 값 제거
+    filter(!is.na(.data[[raw_col]]), .data[[raw_col]] != 0) %>%
+    group_by(처리시설명) %>%
+    arrange(.data[[raw_col]], .by_group = TRUE) %>%
+    summarise(
+      n     = n(),                          # 데이터 갯수
+      a     = floor(1 + 0.95 * (n - 1)),    # 1+0.95×(측정횟수-1)의 정수부
+      b     = (1 + 0.95 * (n - 1)) - a,     # 1+0.95×(측정횟수-1)의 소수부분
+      Xa    = nth(.data[[raw_col]], a),     # nth(): 변수의 a번째 행 출력
+      Xa1   = nth(.data[[raw_col]], a + 1), # nth(): 변수의 a+1번째 행 출력
+      result = (1 - b) * Xa + b * Xa1,      # 기준배출수질 = (1-b) × Xa + b × X(a+1)
+      !!max_col     := max(.data[[raw_col]], na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    rename(
+      !!count_col  := n,
+      !!result_col := result
+    )
+}
 
-## T-P 기준배출수질(나)
-TP_기준배출수질_나 <- TP_data %>%
-  group_by(처리시설명) %>%
-  # 데이터를 오름차순으로 정렬
-  arrange(TP, .by_group = TRUE) %>%
-  reframe(
-    count = n(),                          # 데이터 갯수
-    a = floor(1 + 0.95 * (count - 1)),    # 1+0.95×(측정횟수-1)의 정수부분
-    b = (1 + 0.95 * (count - 1)) - a,     # 1+0.95×(측정횟수-1)의 소수부분
-    Xa = nth(TP, a),                      # nth(): 변수의 a번째 행 출력
-    Xa1 = nth(TP, a + 1),                 # nth(): 변수의 a+1번째 행 출력
-    TP_나 = (1 - b) * Xa + b * Xa1        # 기준배출수질 = (1-b)×Xa+b×X(a+1)
-  )
-
-
-#####  3-3. 최대값 산정  #######################################################
-
-## BOD 최대값
-BOD_최대값 <- BOD_data %>%
-  group_by(처리시설명) %>%
-  reframe(BOD_최대 = max(BOD))
-
-## T-P 최대값
-TP_최대값 <- TP_data %>%
-  group_by(처리시설명) %>%
-  reframe(TP_최대 = max(TP))
+# 사용 예시: raw_col 에 "BOD" 혹은 "TP" 만 넘기면 됩니다.
+BOD_기준배출수질_나 <- calc_nonparametric_limit(data_정리, "BOD")
+TP_기준배출수질_나  <- calc_nonparametric_limit(data_정리,  "TP")
 
 
-#####  3-4. 평균유량 산정  #####################################################
+#####  3-3. 평균유량 산정  #####################################################
 평균유량 <- data_정리 %>%
   select(시군, 단위유역, 처리시설명, 유량) %>%
   group_by(시군, 단위유역, 처리시설명) %>%
@@ -413,14 +346,10 @@ TP_최대값 <- TP_data %>%
   full_join(평균유량, by = c("시군", "단위유역","처리시설명")) %>% 
   left_join(BOD_정규성검증 %>% select(처리시설명, BOD_정규성), by = "처리시설명") %>%
   left_join(BOD_기준배출수질_가 %>% select(처리시설명, BOD_가), by = "처리시설명") %>%
-  left_join(BOD_기준배출수질_나 %>% select(처리시설명, BOD_나), by = "처리시설명") %>%
-  left_join(BOD_최대값, by = "처리시설명") %>%
-  left_join(BOD_측정횟수, by = "처리시설명") %>%
+  left_join(BOD_기준배출수질_나 %>% select(처리시설명, BOD_나, BOD_최대, BOD_개수), by = "처리시설명") %>%
   left_join(TP_정규성검증 %>% select(처리시설명, TP_정규성), by = "처리시설명") %>%
   left_join(TP_기준배출수질_가 %>% select(처리시설명, TP_가), by = "처리시설명") %>%
-  left_join(TP_기준배출수질_나 %>% select(처리시설명, TP_나), by = "처리시설명") %>%
-  left_join(TP_최대값, by = "처리시설명") %>%
-  left_join(TP_측정횟수, by = "처리시설명") %>%
+  left_join(TP_기준배출수질_나 %>% select(처리시설명, TP_나, TP_최대, TP_개수), by = "처리시설명") %>%
   left_join(시설현황_정리 %>% select(처리시설명, 가동개시), by = "처리시설명") %>% 
   mutate(
     시군 = factor(시군, levels = c(
@@ -444,7 +373,10 @@ TP_최대값 <- TP_data %>%
       TP_개수 >= 347 ~ "n>=347",
       .default = TP_정규성
     ),
-    # 기준배출수질 : 정규성 가 방식, 비정규성 및 347회 이상 나 방식, 30회 미만 최대값
+    # 기준배출수질 결정
+    # - 가 방식 : 정규성인 경우 
+    # - 나 방식 : 비정규성 및 측정횟수 347회 이상 
+    # - 최대값 : 측정횟수 30회 미만 
     BOD_기준 = case_when(
       BOD_정규성 == "정규성" ~ BOD_가,
       BOD_정규성 == "비정규성" ~ BOD_나,
@@ -466,7 +398,6 @@ TP_최대값 <- TP_data %>%
          구분 != "미준공")
 
 
-
 ### 최종 정리 자료 내보내기
 sheets <- list(
   "기준배출수질_최종" = 기준배출수질_최종, 
@@ -479,7 +410,7 @@ sheets <- list(
 )
 
 write_xlsx(sheets,
-  path = "전국오염원조사/기준배출수질/Output/기준배출수질_2023년기준_240905.xlsx"
+  path = "전국오염원조사/기준배출수질/Output/기준배출수질_2023년기준_2.xlsx"
 )
 
 
