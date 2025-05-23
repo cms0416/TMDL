@@ -5,6 +5,7 @@ library(readxl)
 library(writexl)
 library(nortest)
 
+## 주소 좌표 변환 관련
 library(httr)
 library(jsonlite) # fromJSON()
 library(progress)
@@ -64,7 +65,7 @@ stp_유역 <- read_excel(
     동리 = ifelse(is.na(리), 읍면동, 리),
     동리코드 = str_c(시군, 읍면동, ifelse(is.na(리), "", 리), sep = " ") %>% 
       str_trim(),
-    가동개시 = str_sub(가동개시, 1, 4)
+    가동개시 = str_sub(가동개시, 1, 4) %>% as.numeric(.)
   ) %>%
   left_join(stp_유역, by = "처리시설코드") %>% 
   distinct()
@@ -393,7 +394,7 @@ TP_기준배출수질_나  <- calc_nonparametric_limit(data_정리,  "TP")
   ) %>%
   relocate(c(평균유량, BOD_기준, TP_기준), .after = TP_30년) %>%
   relocate(가동개시, .after = 구분) %>% 
-  arrange(시군, 단위유역, 구분, 처리시설명) %>% 
+  arrange(시군, 단위유역, 구분, 가동개시, 처리시설명) %>% 
   filter(!단위유역 %in% c("북한D", "임진A"), 
          구분 != "미준공")
 
