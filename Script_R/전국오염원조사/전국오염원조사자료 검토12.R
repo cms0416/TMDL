@@ -5,12 +5,13 @@ library(janitor)
 library(readxl)
 library(writexl)
 
+#####  연도 설정  ##############################################################
+final_year <- 2024
+period <- 3
+years <- (final_year - period + 1):final_year
+
 #####  공통파일(단위유역별 점유율) 불러오기  ###################################
 share <- read_excel("전국오염원조사/단위유역별_점유율_조정.xlsx")
-
-#####  연도 설정  ##############################################################
-final_year <- 2023
-years <- (final_year - 9):final_year
 
 #####  함수 정의  ##############################################################
 ## 반올림 사용자 정의 함수 로드
@@ -167,7 +168,15 @@ bind_dongri <- function(sigun_df, dongri_df) {
 files <- list.files(
   path = "전국오염원조사/생활계",
   pattern = "*.xls", full.names = T
-)
+) %>%
+  # purrr::keep() 조건을 만족하는 요소만 남김
+  keep(~ {
+    # 파일 이름에서 앞 4자리 연도 추출
+    year_str <- str_extract(basename(.x), "^\\d{4}")
+    year_num <- as.numeric(year_str)
+    # 지정한 연도만 선택
+    year_num %in% years
+  })
 
 # 경로지정된 생활계 파일 합치기
 생활계_인구_1원본 <- files %>%
@@ -242,7 +251,15 @@ share_생활계 <- share_cal(오염원 = "생활계")
 files <- list.files(
   path = "전국오염원조사/생활계",
   pattern = "*.xls", full.names = T
-)
+)  %>%
+  # purrr::keep() 조건을 만족하는 요소만 남김
+  keep(~ {
+    # 파일 이름에서 앞 4자리 연도 추출
+    year_str <- str_extract(basename(.x), "^\\d{4}")
+    year_num <- as.numeric(year_str)
+    # 지정한 연도만 선택
+    year_num %in% years
+  })
 
 # 경로지정된 생활계 파일 합치기
 생활계_물사용량_1원본 <- files %>%
@@ -319,7 +336,15 @@ share_생활계 <- share_cal(오염원 = "생활계")
 files <- list.files(
   path = "전국오염원조사/축산계",
   pattern = "*.xls", full.names = T
-)
+)  %>%
+  # purrr::keep() 조건을 만족하는 요소만 남김
+  keep(~ {
+    # 파일 이름에서 앞 4자리 연도 추출
+    year_str <- str_extract(basename(.x), "^\\d{4}")
+    year_num <- as.numeric(year_str)
+    # 지정한 연도만 선택
+    year_num %in% years
+  })
 
 # 데이터 불러오기 및 합치기
 축산계_1원본 <- files %>%
@@ -419,7 +444,15 @@ share_축산계 <- share_cal(
 files <- list.files(
   path = "전국오염원조사/산업계",
   pattern = "*.xls", full.names = T
-)
+)  %>%
+  # purrr::keep() 조건을 만족하는 요소만 남김
+  keep(~ {
+    # 파일 이름에서 앞 4자리 연도 추출
+    year_str <- str_extract(basename(.x), "^\\d{4}")
+    year_num <- as.numeric(year_str)
+    # 지정한 연도만 선택
+    year_num %in% years
+  })
 
 ## Excel 파일을 읽어와 데이터 합치기
 산업계_1원본 <- files %>%
@@ -574,7 +607,15 @@ share_산업계 <- share_cal(
 files <- list.files(
   path = "전국오염원조사/토지계",
   pattern = "*.xls", full.names = T
-)
+)  %>%
+  # purrr::keep() 조건을 만족하는 요소만 남김
+  keep(~ {
+    # 파일 이름에서 앞 4자리 연도 추출
+    year_str <- str_extract(basename(.x), "^\\d{4}")
+    year_num <- as.numeric(year_str)
+    # 지정한 연도만 선택
+    year_num %in% years
+  })
 
 ## Excel 파일을 읽어와 데이터 합치기
 토지계_1원본 <- files %>%
@@ -724,7 +765,15 @@ share_토지계 <- share %>%
 files <- list.files(
   path = "전국오염원조사/양식계",
   pattern = "*.xls", full.names = T
-)
+)  %>%
+  # purrr::keep() 조건을 만족하는 요소만 남김
+  keep(~ {
+    # 파일 이름에서 앞 4자리 연도 추출
+    year_str <- str_extract(basename(.x), "^\\d{4}")
+    year_num <- as.numeric(year_str)
+    # 지정한 연도만 선택
+    year_num %in% years
+  })
 
 # 데이터 불러오기 및 합치기
 양식계_1원본 <- files %>%
@@ -835,7 +884,15 @@ share_양식계 <- share_cal(
 files <- list.files(
   path = "전국오염원조사/매립계",
   pattern = "*.xls", full.names = T
-)
+)  %>%
+  # purrr::keep() 조건을 만족하는 요소만 남김
+  keep(~ {
+    # 파일 이름에서 앞 4자리 연도 추출
+    year_str <- str_extract(basename(.x), "^\\d{4}")
+    year_num <- as.numeric(year_str)
+    # 지정한 연도만 선택
+    year_num %in% years
+  })
 
 # 데이터 불러오기 및 합치기
 매립계_시설수_1원본 <- files %>%
@@ -888,7 +945,15 @@ for (i in years) {
 files <- list.files(
   path = "전국오염원조사/매립계",
   pattern = "*.xls", full.names = T
-)
+)  %>%
+  # purrr::keep() 조건을 만족하는 요소만 남김
+  keep(~ {
+    # 파일 이름에서 앞 4자리 연도 추출
+    year_str <- str_extract(basename(.x), "^\\d{4}")
+    year_num <- as.numeric(year_str)
+    # 지정한 연도만 선택
+    year_num %in% years
+  })
 
 # 데이터 불러오기 및 합치기
 매립계_침출수_1원본 <- files %>%
@@ -944,7 +1009,7 @@ for (i in years) {
 
 
 ## ************************************************************************** ##
-############################  전체 통합 자료 정리  #############################
+########################### ★ 전체 통합 자료 정리 ★ ############################
 ## ************************************************************************** ##
 
 #####  최종 데이터 정리 함수  --------------------------------------------------
@@ -993,28 +1058,28 @@ data_total <- function(data) {
 데이터통합 %<>% data_total()
 
 
-## 수질개선사업계획 추진실적 기준으로 정리(기타수계 제외)
+## 수질개선사업계획 추진실적 기준으로 정리(기타수계 및 시행계획 지역 제외)
 데이터통합_추진실적 <- 데이터통합 %>%
   filter(
-    !시군 %in% c("동해시", "속초시", "양양군"),
-    !단위유역 %in% c("기타", "소계")
-  ) %>%
-  # 기타수계 제외한 합계 재산정
-  bind_rows(
-    (.) %>%
-      group_by(시군, 오염원, 분류) %>%
-      summarise(across(all_of(as.character(years)), ~ sum(.)), .groups = "drop") %>%
-      mutate(
-        단위유역 = "소계",
-        단위유역 = factor(단위유역, levels = c(
-          "소계", "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A",
-          "섬강A", "섬강B", "북한A", "북한B", "소양A", "인북A", "소양B",
-          "북한C", "홍천A", "한탄A", "한강B", "제천A", "한강D", "북한D",
-          "한탄B", "임진A", "낙본A", "기타"
-        ))
-      )
-  ) %>%
-  arrange(시군, 단위유역, 오염원, 분류)
+    !시군 %in% c("강원도", "동해시", "속초시", "양양군"),
+    !단위유역 %in% c("기타", "소계", "북한D", "임진A")
+  )
+  # # 기타수계 제외한 합계 재산정
+  # bind_rows(
+  #   (.) %>%
+  #     group_by(시군, 오염원, 분류) %>%
+  #     summarise(across(all_of(as.character(years)), ~ sum(.)), .groups = "drop") %>%
+  #     mutate(
+  #       단위유역 = "소계",
+  #       단위유역 = factor(단위유역, levels = c(
+  #         "소계", "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A",
+  #         "섬강A", "섬강B", "북한A", "북한B", "소양A", "인북A", "소양B", 
+  #         "북한C", "홍천A", "한탄A", "제천A", "한강B", "한강D", "북한D", 
+  #         "임진A", "한탄B","낙본A", "기타"
+  #       ))
+  #     )
+  # ) %>%
+  # arrange(시군, 단위유역, 오염원, 분류)
 
 
 ### 엑셀 파일 내보내기_writexl
