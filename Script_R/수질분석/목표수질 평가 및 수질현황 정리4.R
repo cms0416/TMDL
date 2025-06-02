@@ -8,18 +8,19 @@ library(writexl)
 ### 반올림 사용자 정의 함수 로드
 source("Script_R/Function/func_round2.R")
 
+### 평가 연도 범위 설정(평가 시작 년도 +2 부터 당해 연도 까지)
+final_year <- 2025
+start_year <- final_year - 10
+years <- (start_year + 2):final_year
+
 ### 데이터 불러오기 및 전처리(측정 자료에 목표수질, 권역, 강원도 여부 등 추가)
 target <- read_excel("수질분석/목표수질.xlsx")
 
-obs <- read_excel("수질분석/총량측정망_2007_2024.xlsx") %>%
+obs <- read_excel("수질분석/총량측정망_2007_2025.xlsx") %>%
   left_join(target, by = "총량지점명") %>%
-  filter(연도 >= 2014) %>% 
+  filter(연도 >= start_year) %>% 
   select(-c(수온, pH, EC, DO, COD, SS, TN))
 
-
-### 평가 연도 범위 설정(평가 시작 년도 +2 부터 당해 연도 까지)
-# 2014년 부터 설정
-years <- 2016:2024
 
 
 ##########  연평균 산정  #######################################################
@@ -189,10 +190,10 @@ TOC_total <- bind_files(TOC)
 
 ## BOD, TP 표 하나에 정리(업무보고 양식)
 BOD_TP_total <- BOD_total %>% 
-  select(-c(`2014`:`2024`)) %>% 
+  select(-all_of(as.character(start_year:final_year))) %>% 
   # mutate(항목 = "BOD", .before = 1) %>% 
   left_join(TP_total %>% 
-              select(-c(`2014`:`2024`)),
+              select(-all_of(as.character(start_year:final_year))),
             by = c("강원도", "권역", "총량지점명")) %>%
   filter(강원도 == "강원도") %>% 
   select("강원도":"BOD_목표수질", "TP_목표수질", sort(names(.))) %>% 
@@ -238,13 +239,27 @@ obs_정리 <- obs %>%
       TRUE ~ "겨울"
     ),
     계절 = factor(계절, levels = c("봄", "여름", "가을", "겨울"))
-  )
+  ) %>% 
+  filter(강원도 == "강원도")
 
 ## 계절별 달성 현황
 계절별달성 <- obs_정리 %>% 
   filter(!is.na(TP)) %>% 
   group_by(총량지점명, 연도, 계절) %>% 
-  summarise(across(c(전체, BOD_달성, TP_달성), ~ sum(.)), .groups = "drop")
+  summarise(across(c(전체, BOD_달성, TP_달성), ~ sum(.)), .groups = "drop") %>% 
+  group_by(총량지점명, 연도) %>%
+  group_modify(~ .x %>%
+                 adorn_totals(where = "row", fill = "소계", name = "소계", na.rm = TRUE)) %>% 
+  mutate(BOD_달성률 = round2(BOD_달성 / 전체, 3), 
+         TP_달성률 = round2(TP_달성 / 전체, 3),
+         총량지점명 = factor(총량지점명, levels = c(
+           "골지A", "오대A", "주천A", "평창A", "옥동A", "한강A", "섬강A",
+           "섬강B", "북한A", "북한B", "소양A", "인북A", "소양B", "북한C",
+           "홍천A", "한탄A", "제천A", "한강B", "한강D", "북한D", "임진A", 
+           "한탄B", "낙본A"
+         ))) %>% 
+  arrange(총량지점명) %>% 
+  relocate(starts_with("TP"), .after = 전체)
 
 계절별측정횟수 <- obs_정리 %>% 
   filter(!is.na(TP)) %>% 
@@ -252,8 +267,8 @@ obs_정리 <- obs %>%
   summarise(across(전체, ~ sum(.)), .groups = "drop") %>% 
   adorn_percentages(denominator = "col") %>% 
   adorn_pct_formatting() %>% 
-  adorn_ns()
+  adorn_ns() 
 
 
 ## 파일 내보내기
-write_xlsx(계절별달성, path = "수질 분석/Output/총량측정망_계절별달성현황.xlsx")
+write_xlsx(계절별달성, path = "수질분석/Output/총량측정망_계절별달성현황.xlsx")
