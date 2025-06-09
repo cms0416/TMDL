@@ -72,11 +72,9 @@ obs <- read_excel("수질분석/섬강A/섬강A_수질측정망_2014_2023.xlsx")
                 ifelse(월 >= 6 & 월 <= 8, "여름",
                        ifelse(월 >= 9 & 월 <= 11, "가을", "겨울")
                 )
-    )
-  ) %>%
-  # '계절' 요인형(factor)으로 변환 후 계절 순서로 요인 순서 변경
-  mutate(계절 = factor(계절, levels = c("봄", "여름", "가을", "겨울"))) %>% 
-  mutate(
+    ),
+    # '계절' 요인형(factor)으로 변환
+    계절 = factor(계절, levels = c("봄", "여름", "가을", "겨울")),
     목표수질_TP = 0.035,
     초과여부 = ifelse(TP > 목표수질_TP, "초과", "달성"),
     측정부하량_TP = 유량 * TP * 86.4,
@@ -106,25 +104,79 @@ write_xlsx(섬강A, path = "수질분석/Output/수질검토_섬강A.xlsx")
 
 #####  데이터 분석  ############################################################
 
-## 월별 강수량 합계
-강수량_월별 <- 기상자료 %>% 
+### 강수량 데이터 정리 ---------------------------------------------------------
+## 연도별 강수량 합계
+강수량_연도별_합계 <- 기상자료 %>% 
+  select(일자, 일강수량) %>% 
+  mutate(
+    연도 = year(일자)) %>% 
+  # 연도별 월강수량 합계
+  group_by(연도) %>%
+  summarise(연강수량 = sum(일강수량, na.rm=TRUE), .groups = "drop")
+
+## 연월별 강수량 합계
+강수량_연월별_합계 <- 기상자료 %>% 
   select(일자, 일강수량) %>% 
   mutate(
     연도 = year(일자),
     월 = month(일자)) %>% 
   # 연도별 월강수량 합계
   group_by(연도, 월) %>%
-  summarise(월강수량 = sum(일강수량, na.rm=TRUE), .groups = "drop") %>%
-  # 월별 강수량 평균
-  group_by(월) %>%
-  summarise(월강수량 = mean(월강수량, na.rm=TRUE), .groups = "drop")
+  summarise(월강수량 = sum(일강수량, na.rm=TRUE), .groups = "drop") %>% 
+  group_by(연도) %>% 
+  group_modify(~ .x %>% adorn_totals(where = "row", name = "소계"))
 
+## 월별 강수량 평균
+강수량_월별_평균 <- 강수량_연월별_합계 %>%
+  filter(월 != "소계") %>% 
+  group_by(월) %>%
+  summarise(월강수량 = mean(월강수량, na.rm=TRUE), .groups = "drop") %>% 
+  mutate(월 = as.numeric(월)) %>% 
+  arrange(월)
+
+## 연도 및 계절별 강수량 합계
+강수량_연도_계절별_합계 <- 기상자료 %>% 
+  select(일자, 일강수량) %>% 
+  mutate(
+    연도 = year(일자),
+    월 = month(일자),
+    계절 = ifelse(월 >= 3 & 월 <= 5, "봄",
+                ifelse(월 >= 6 & 월 <= 8, "여름",
+                       ifelse(월 >= 9 & 월 <= 11, "가을", "겨울")
+                )
+    ),
+    # '계절' 요인형(factor)으로 변환
+    계절 = factor(계절, levels = c("봄", "여름", "가을", "겨울"))) %>% 
+  # 연도별 월강수량 합계
+  group_by(연도, 계절) %>%
+  summarise(월강수량 = sum(일강수량, na.rm=TRUE), .groups = "drop") %>% 
+  group_by(연도) %>% 
+  group_modify(~ .x %>% adorn_totals(where = "row", name = "소계"))
+
+
+### 초과율 데이터 정리 ---------------------------------------------------------
 ## 월별 초과율
 초과율_월별 <- 섬강A %>%
   tabyl(월, 초과여부) %>% 
   mutate(총계 = 달성 + 초과, .after = 1) %>% 
   mutate(초과율 = round(초과 / 총계 * 100, 2)) %>% 
-  left_join(강수량_월별, by = "월")
+  left_join(강수량_월별_평균, by = "월")
+
+## 연도 및 계절별 초과율
+초과율_연도_계절별 <- 섬강A %>%
+  group_by(연도, 계절) %>%
+  summarise(
+    초과 = sum(초과여부 == "초과"),
+    달성 = sum(초과여부 == "달성"),
+    .groups = "drop"
+  ) %>% 
+  group_by(연도) %>% 
+  group_modify(~ .x %>% adorn_totals(where = "row", name = "소계")) %>%
+  mutate(
+    총계 = 초과 + 달성,
+    초과율 = round(초과 / 총계 * 100, 2)
+  ) %>% 
+  left_join(강수량_연도_계절별_합계, by = c("연도", "계절"))
 
 ## 계절별 초과율
 초과율_계절별 <- 섬강A %>%
@@ -225,34 +277,10 @@ ggcorrplot(cor_matrix,
 dev.off()
 
 
-######  그래프 작성  ###########################################################
+#####  그래프 작성  ############################################################
 
 pdf("E:/Coding/TMDL/수질분석/Output/Plot/그래프_섬강A_TP(8.4x4).pdf",
   width = 8.4, height = 4)
-
-## 섬강A 유역 내 측정 지점 별 박스플롯
-obs %>%
-  filter(!측정소명 %in% c("계천2", "금계천2")) %>%
-  ggplot(aes(x = 측정소명, y = TP)) +
-  # staplewidth : 박스플롯이 수염이 끝나는 지점 표시 너비
-  geom_boxplot(outliers = FALSE, staplewidth = 0.3) +
-  geom_jitter(aes(fill = 계절),
-    shape = 21, alpha = 0.6, size = 2.3,
-    position = position_jitter(0.2)
-  ) +
-  scale_x_discrete(limits = c("전천", "섬강1", "섬강2", "섬강3")) +
-  scale_y_log10(name = "T-P(mg/L)") +
-  theme_bw(base_family = "notosanskr", base_size = 14) +
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_text(face = "bold"),
-    panel.border = element_rect(linewidth = 0.5, fill = NA),
-    legend.position = "top", # 범례 위치
-    legend.direction = "horizontal", # 범례 방향
-    legend.box = "horizontal", # 범례 배치 방향
-    legend.background = element_rect(linewidth = 0.3, fill = "white", color = "black"), # 범례 배경 및 테두리 색
-    legend.margin = margin(5, 5, 5, 5)
-  )
 
 ## 강수 / 수질(T-P) 그래프
 섬강A_기상 %>% 
@@ -318,6 +346,32 @@ obs %>%
     legend.background = element_rect(linewidth = 0.3, fill = "white", color = "black"), # 범례 배경 및 테두리 색
     legend.margin = margin(5, 5, 5, 5)
   )
+
+
+## 섬강A 유역 내 측정 지점 별 박스플롯
+obs %>%
+  filter(!측정소명 %in% c("계천2", "금계천2")) %>%
+  ggplot(aes(x = 측정소명, y = TP)) +
+  # staplewidth : 박스플롯이 수염이 끝나는 지점 표시 너비
+  geom_boxplot(outliers = FALSE, staplewidth = 0.3) +
+  geom_jitter(aes(fill = 계절),
+              shape = 21, alpha = 0.6, size = 2.3,
+              position = position_jitter(0.2)
+  ) +
+  scale_x_discrete(limits = c("전천", "섬강1", "섬강2", "섬강3")) +
+  scale_y_log10(name = "T-P(mg/L)") +
+  theme_bw(base_family = "notosanskr", base_size = 14) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(face = "bold"),
+    panel.border = element_rect(linewidth = 0.5, fill = NA),
+    legend.position = "top", # 범례 위치
+    legend.direction = "horizontal", # 범례 방향
+    legend.box = "horizontal", # 범례 배치 방향
+    legend.background = element_rect(linewidth = 0.3, fill = "white", color = "black"), # 범례 배경 및 테두리 색
+    legend.margin = margin(5, 5, 5, 5)
+  )
+
 
 ## 간이 LDC 그래프
 섬강A %>% 

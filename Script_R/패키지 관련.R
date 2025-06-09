@@ -9,7 +9,7 @@ pkg <- c(
   "showtext", "rvest", "RSelenium", "seleniumPipes", "styler", 
   "remotes", "progress", "datapasta", "sf", "sp", "janitor", "gt",
   "psych", "ggcorrplot", "scales", "nortest", "ggplotify", "cowplot",
-  "installr", "patchwork"
+  "installr", "patchwork", "slider"
 )
 
 ### 패키지 설치
@@ -53,6 +53,7 @@ library(ggcorrplot) # 상관관계 그래프
 library(scales)
 library(nortest) # 정규성 검증
 library(installr) # R 업데이트
+library(slider)
 # library(extrafont)
 
 shelf("tidyverse", "data.table", "ggthemes", "writexl", "extrafont", "rvest", 

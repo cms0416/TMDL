@@ -39,8 +39,9 @@ source("Script_R/Function/func_season.R")
 시작연도 <- 2015
 종료연도 <- 2024
 
-## 기상자료
+## 기상자료(일단위)
 기상자료 <- read_excel("수질분석/기상자료/기상자료_강수량_기온.xlsx") %>%
+  filter(str_detect(지점명, 기상대) == TRUE) %>% 
   select(-c(지점, 지점명)) %>%
   set_names(c("일자", "평균기온", "일강수량")) %>%
   # 3일 누적 강수량 산정(zoo::rollapply)
@@ -59,6 +60,18 @@ source("Script_R/Function/func_season.R")
     )
   )
 
+## 기상자료(시단위)
+기상자료_시단위 <- read_excel("수질분석/기상자료/기상자료_강수량_기온_시단위.xlsx") %>%
+  filter(str_detect(지점명, 기상대) == TRUE) %>% 
+  select(-c(지점, 지점명)) %>% 
+  set_names(c("일시", "기온", "강수량")) %>% 
+  mutate(
+    날짜 = as.Date(일시),
+    연도 = year(일시),
+    월 = month(일시),
+    # 고강도 강우 조건 확인(1시간 강수량 ≥ 10mm)
+    고강도강우_1시간 = 강수량 >= 10
+  )
 
 ## 수질측정망 자료 정리
 수질측정망 <- read_excel("수질분석/총량측정망_소유역포함_2007_2024.xlsx") %>%
@@ -97,6 +110,10 @@ source("Script_R/Function/func_season.R")
     )
   )
 
+## 연도별 평균 수질 계산
+연도별_평균 <- 총량측정망 %>%
+  group_by(연도) %>%
+  summarise(TP_평균 = round(mean(TP, na.rm = TRUE), 3))
 
 ## 수질 자료와 기상자료 합치기
 총량측정망_기상 <- 기상자료 %>%
@@ -158,6 +175,21 @@ source("Script_R/Function/func_season.R")
   group_by(연도) %>% 
   group_modify(~ .x %>% adorn_totals(where = "row", name = "소계"))
 
+## 고강도 강우일수 계산 (일강수량 20mm 이상 기준)
+기상자료_강우강도지표 <- 기상자료 %>%
+  mutate(
+    연도 = year(일자),
+    고강도강우일 = ifelse(일강수량 >= 20, 1, 0),
+    강우일 = ifelse(일강수량 > 0, 1, 0)
+  ) %>%
+  group_by(연도) %>%
+  summarise(
+    총강우일수 = sum(강우일, na.rm = TRUE),
+    고강우일수 = sum(고강도강우일, na.rm = TRUE),
+    고강우비율 = round(고강우일수 / 총강우일수 * 100, 2)
+  )
+
+
 ### 달성률 데이터 정리 ---------------------------------------------------------
 ## 월별 달성률
 달성률_월별 <- 총량측정망 %>%
@@ -187,6 +219,13 @@ source("Script_R/Function/func_season.R")
     달성률 = round(달성 / 총계 * 100, 2)
   ) %>% 
   left_join(강수량_연도_계절별_합계, by = c("연도", "계절"))
+
+## 연도 별 달성률 및 강우강도 지표
+달성률_강우강도_연도별 <- 달성률_연도_계절별 %>%
+  filter(계절 == "소계") %>% 
+  select(-계절) %>% 
+  left_join(연도별_평균, by = "연도") %>% 
+  left_join(기상자료_강우강도지표, by = "연도")
 
 ## 유황구간별 달성률
 달성률_유황구간별 <- 총량측정망 %>%
@@ -221,8 +260,74 @@ write_xlsx(
   path = str_c("수질분석/Output/수질검토_", 단위유역, ".xlsx")
 )
 
+### 강우강도 관련 검토 ---------------------------------------------------------
+# 일별 최대 시간강우량 및 고강도 여부
+일별_지표 <- 기상자료_시단위 %>%
+  group_by(날짜) %>%
+  filter(!all(is.na(강수량))) %>%
+  ungroup() %>%
+  group_by(날짜) %>%
+  summarise(
+    일강수량 = sum(강수량, na.rm = TRUE),
+    최대시간강우량 = max(강수량, na.rm = TRUE),
+    고강도강우_발생여부 = any(강수량 >= 10, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    연도 = year(날짜),
+    강우일 = 일강수량 > 0
+  )
+
+
+# 4. 연도별 요약 지표
+연도별_강우강도지표 <- 일별_지표 %>%
+  group_by(연도) %>%
+  summarise(
+    총강우일수 = sum(강우일),
+    고강도강우일수 = sum(고강도강우_발생여부),
+    연최대_시간강우량 = max(최대시간강우량, na.rm = TRUE),
+    일최대_시간강우량평균 = mean(최대시간강우량[강우일], na.rm = TRUE),  # 수정: 강우일만 필터링
+    .groups = "drop"
+  )
+
+
+
+
 
 ######  그래프 작성  ###########################################################
+
+
+## 강수 / 수질(T-P) 그래프  ----------------------------------------------------
+총량측정망_기상 %>%
+  filter(연도 >= 2021, 연도 <= 2024) %>%
+  ggplot() +
+  geom_bar(aes(x = 일자, y = 일강수량 / 300, color = "steelblue2"),
+           stat = "identity", width = 0.3, fill = "steelblue2"
+  ) +
+  geom_point(aes(x = 일자, y = TP, color = "black", fill = 계절),
+             shape = 21, alpha = 0.6, size = 2.5
+  ) +
+  geom_hline(aes(yintercept = 목표수질_TP, color = "red"),
+             linetype = "dashed", linewidth = 0.7
+  ) +
+  scale_y_continuous(
+    name = "T-P(mg/L)",
+    sec.axis = sec_axis(~ . * 300, name = "강수량(mm)", labels = scales::comma)
+  ) +
+  theme_bw(base_family = "notosanskr", base_size = 14) +
+  scale_fill_discrete(name = "계절", na.translate = F) + # 범례 제목(NA값 제외)
+  scale_color_manual(
+    name = NULL, values = c("black", "red", "steelblue2"),
+    labels = c("수질", "목표수질", "강수량")
+  ) +
+  theme(
+    panel.border = element_rect(linewidth = 0.5, fill = NA),
+    legend.position = "top", # 범례 위치
+    legend.direction = "horizontal", # 범례 방향
+    legend.box = "horizontal", # 범례 배치 방향
+    legend.background = element_rect(linewidth = 0.3, fill = "white", color = "black"), # 범례 배경 및 테두리 색
+    legend.margin = margin(5, 5, 5, 5)
+  )
 
 ## 유량 / 수질(T-P) 그래프  ----------------------------------------------------
 original_plot <- 총량측정망 %>%
@@ -427,34 +532,4 @@ dev.off()
     legend.margin = margin(5, 5, 5, 5)
   )
 
-## 강수 / 수질(T-P) 그래프  ----------------------------------------------------
-총량측정망_기상 %>%
-  filter(연도 > 2020, 연도 < 2024) %>%
-  ggplot() +
-  geom_bar(aes(x = 일자, y = 일강수량 / 300, color = "steelblue2"),
-    stat = "identity", width = 0.3, fill = "steelblue2"
-  ) +
-  geom_point(aes(x = 일자, y = TP, color = "black", fill = 계절),
-    shape = 21, alpha = 0.6, size = 2.5
-  ) +
-  geom_hline(aes(yintercept = 목표수질_TP, color = "red"),
-    linetype = "dashed", linewidth = 0.7
-  ) +
-  scale_y_continuous(
-    name = "T-P(mg/L)",
-    sec.axis = sec_axis(~ . * 300, name = "강수량(mm)", labels = scales::comma)
-  ) +
-  theme_bw(base_family = "notosanskr", base_size = 14) +
-  scale_fill_discrete(name = "계절", na.translate = F) + # 범례 제목(NA값 제외)
-  scale_color_manual(
-    name = NULL, values = c("black", "red", "steelblue2"),
-    labels = c("수질", "목표수질", "강수량")
-  ) +
-  theme(
-    panel.border = element_rect(linewidth = 0.5, fill = NA),
-    legend.position = "top", # 범례 위치
-    legend.direction = "horizontal", # 범례 방향
-    legend.box = "horizontal", # 범례 배치 방향
-    legend.background = element_rect(linewidth = 0.3, fill = "white", color = "black"), # 범례 배경 및 테두리 색
-    legend.margin = margin(5, 5, 5, 5)
-  )
+
