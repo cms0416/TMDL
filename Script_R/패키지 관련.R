@@ -34,6 +34,7 @@ library(showtext)  # 그래프에 구글 폰트 적용
 library(patchwork) # 그래프 레이아웃 관리
 library(ggplotify) # 'cowplot'을 사용하여 생성된 플롯을 'ggplot' 객체로 변환하여 정렬 가능
 library(cowplot)   # 그래프 테마, 정렬하고 배열 기능, 플롯에 주석 및 이미지 추가 등
+library(GGally)
 
 library(writexl)
 library(openxlsx)

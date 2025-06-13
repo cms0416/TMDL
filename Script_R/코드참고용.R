@@ -10,8 +10,10 @@ library(writexl)
 # skip : 지정된 개수의 행 스킵, col_names : 첫햇을 제목행으로 지정할지 여부 결정
 # guess_max : 열의 자료 형태를 결정하는 최대 행 개수(inf : 범위를 무한대로 설정)
 # guess_max 미설정 시 초반 행 1000개 이상이 결측값인 경우 전체열을 결측으로 판단
-df <- read_excel("AAA/BBB/data.xlsx", sheet = 2, skip = 5, col_names = F, 
-                 guess_max = Inf)
+df <- read_excel("AAA/BBB/data.xlsx",
+  sheet = 2, skip = 5, col_names = F,
+  guess_max = Inf
+)
 
 # 특정 행 또는 열만 불러오기
 df <- read_excel("AAA/BBB/data.xlsx", range = cell_rows(102:151), col_names = FALSE)
@@ -49,15 +51,15 @@ for (file in files) {
 
 # └ read.table() : txt 파일 불러오기 -------------------------------------------
 df <- read.table("AAA/BBB/data.txt",
-                 header = F, quote = "", sep = "|", fill = T,
-                 encoding = "UTF-8", fileEncoding = "EUC-KR"
+  header = F, quote = "", sep = "|", fill = T,
+  encoding = "UTF-8", fileEncoding = "EUC-KR"
 )
 
 
 # ========== ▶ 파일 내보내기 ◀ =================================================
 # └ write.csv : csv 파일 내보내기 ----------------------------------------------
 write.csv(df, "AAA/BBB/Output/df.csv")
-write_xlsx(df, path = "AAA/BBB/Output/df.csv")  # write_xlsx도 csv 내보내기 가능
+write_xlsx(df, path = "AAA/BBB/Output/df.csv") # write_xlsx도 csv 내보내기 가능
 
 # └ write_xlsx : 엑셀파일 내보내기 ---------------------------------------------
 write_xlsx(df, path = "AAA/BBB/Output/df.xlsx")
@@ -88,7 +90,7 @@ write_xlsx(sheets, path = "AAA/BBB/Output/df.xlsx")
 # 1. 행을 작업 대상으로 하는 함수 ----------------------------------------------
 # └ 1.1 filter() : 조건에 의한 행 선택 -----------------------------------------
 df %>% filter(var %in% c(a, b, c, ...))
-df %>% filter(var1 == 1, var2 != 2, var3 > 3)  # ,과 &는 같은 의미
+df %>% filter(var1 == 1, var2 != 2, var3 > 3) # ,과 &는 같은 의미
 df %>% filter(var1 == 1 | var2 != 2)
 
 # 해당 조건이 모두 아닌 경우 필터
@@ -99,26 +101,26 @@ df %>% filter(!(test %in% c("조건1", "조건2", "조건3")))
 
 # └ 1.2 slice() : 인덱스에 의한 행 선택 ----------------------------------------
 # slice()
-df %>% slice(5:10)     # 5~10번째 행 선택
-df %>% slice(-(5:10))  # 5~10번째 행 제거
-df %>% slice(n())      # 마지막 행 선택, n()은 데이터 프레임의 행의 개수를 반환
+df %>% slice(5:10) # 5~10번째 행 선택
+df %>% slice(-(5:10)) # 5~10번째 행 제거
+df %>% slice(n()) # 마지막 행 선택, n()은 데이터 프레임의 행의 개수를 반환
 
 # slice_head(), slice_tail() : 데이터 프레임의 처음 또는 마지막 몇 행을 선택
-df %>% slice_head(n=10)       # 앞에서부터 10개의 행을 선택
-df %>% slice_tail(prop=0.3)   # 뒤에서 비율 0.3만큼 행을 선택
+df %>% slice_head(n = 10) # 앞에서부터 10개의 행을 선택
+df %>% slice_tail(prop = 0.3) # 뒤에서 비율 0.3만큼 행을 선택
 
 # slice_sample() : 랜덤으로 행 선택
 # n : 행의 개수, prop : 비율, replace=TRUE : 복원추출(기본적으로 비복원추출)
-df %>% slice_sample(n=3)
-df %>% slice_sample(prop=0.2, replace=TRUE)
+df %>% slice_sample(n = 3)
+df %>% slice_sample(prop = 0.2, replace = TRUE)
 
 # slice_max(), slice_min() : 특정 변수가 가장 크거나 가장 작은 행을 선택
-df %>% slice_max(var, n=10)     # var이 가장 큰 10개의 행 선택
-df %>% slice_min(var, prop=0.1) # var이 작은 순서대로 전체 행의 10%를 선택
+df %>% slice_max(var, n = 10) # var이 가장 큰 10개의 행 선택
+df %>% slice_min(var, prop = 0.1) # var이 작은 순서대로 전체 행의 10%를 선택
 
 
 # └ 1.3 arrange() : 행의 정렬 --------------------------------------------------
-df %>% arrange(var1)             # var1으로 오름차순
+df %>% arrange(var1) # var1으로 오름차순
 df %>% arrange(var1, desc(var2)) # var1으로 오름차순, var1이 같을 경우 var2로 내림차순
 
 # └ 1.3.1 fct_reorder() : 다른 행을 기준으로 범주형 데이터(factor) 정렬 --------
@@ -131,7 +133,8 @@ df %>% mutate(var1 = fct_reorder(var1, var2, .desc = T))
 df %>% distinct(var1, .keep_all = TRUE)
 
 # 참고 : 중복자료 개수 확인
-df %>% group_by(var1) %>%
+df %>%
+  group_by(var1) %>%
   mutate(중복 = length(var1))
 
 # 2. 열을 작업 대상으로 하는 함수 ----------------------------------------------
@@ -142,16 +145,16 @@ df %>% select(1:3)
 df %>% select(var1:var3, var10)
 df %>% select(!c(1, 4, 10)) # 1, 4, 10번째 변수를 제외
 df %>% select(-c(1, 4, 10)) # 위와 같음
-df %>% select(1:4, -1)      # 1~4번 변수 중 1번 변수를 제외 = 1~3번 변수
-df %>% select(1:4, !1)      # 1~4번 변수 + (1번 변수 제외 나머지) = 전체
+df %>% select(1:4, -1) # 1~4번 변수 중 1번 변수를 제외 = 1~3번 변수
+df %>% select(1:4, !1) # 1~4번 변수 + (1번 변수 제외 나머지) = 전체
 
 # 특정 타입의 변수만 선택
-df %>% select(where(is.numeric))                       # 수(int, dbl)만 선택
+df %>% select(where(is.numeric)) # 수(int, dbl)만 선택
 df %>% select(where(is.numeric) | where(is.character)) # 수 또는 문자형 변수를 선택
 
 # ++ 열이름순으로 열순서 정렬 -----
 df %>% select(sort(names(.)))
-df %>% select(var1:var3, sort(names(.)))  # 특정 열은 먼저 선택 후 나머지 열은 이름순 정렬
+df %>% select(var1:var3, sort(names(.))) # 특정 열은 먼저 선택 후 나머지 열은 이름순 정렬
 
 # select()에서 사용할 수 있는 함수
 # - everything(): 모든 변수를 선택한다.
@@ -162,8 +165,8 @@ df %>% select(var1:var3, sort(names(.)))  # 특정 열은 먼저 선택 후 나�
 # - num_range("x", 1:10): c("x1", "x2", ...)와 같음
 
 # ++ pull() : 변수를 데이터프레임이 아닌 벡터의 형태로 선택 -----
-df %>% pull(var=1)    # 가져올 변수의 위치(첫번째 열) 지정
-df %>% pull(var=var2) # 가져올 변수의 이름(var2) 지정
+df %>% pull(var = 1) # 가져올 변수의 위치(첫번째 열) 지정
+df %>% pull(var = var2) # 가져올 변수의 이름(var2) 지정
 
 
 # └ 2.2 열 이름 변경 -----------------------------------------------------------
@@ -182,8 +185,8 @@ rename_with(.data, .fn, .cols = everything(), ...)
 df %>% rename_with(toupper) # 모든 변수명을 대문자로 변환
 
 # Examples
-df %>% rename_with(toupper) 
-df %>% rename_with(toupper, starts_with("Petal")) 
+df %>% rename_with(toupper)
+df %>% rename_with(toupper, starts_with("Petal"))
 df %>% rename_with(toupper, contains("a"))
 df %>% rename_with(~ tolower(gsub(".", "_", .x, fixed = TRUE)))
 df %>% rename_with(~ str_remove(., "a_"))
@@ -200,21 +203,23 @@ names(df) <- c("x4", "x2", "x5")
 
 
 # └ 2.3 relocate() : 열의 위치(순서) 변경 --------------------------------------
-df %>% relocate(var5)                             # var5를 첫번째 열로 이동
-df %>% relocate(var5, .after = last_col())        # var5를 마지막 열로 이동
-df %>% relocate(var5, .after = var2)              # var5를 var2 뒤로 이동
-df %>% relocate(var5, .before = var3)             # var5를 var3 앞으로 이동
-df %>% relocate(starts_with("a"), .after = var2)  # 이름에 a가 포함되는 변수를 var2 뒤로 이동
+df %>% relocate(var5) # var5를 첫번째 열로 이동
+df %>% relocate(var5, .after = last_col()) # var5를 마지막 열로 이동
+df %>% relocate(var5, .after = var2) # var5를 var2 뒤로 이동
+df %>% relocate(var5, .before = var3) # var5를 var3 앞으로 이동
+df %>% relocate(starts_with("a"), .after = var2) # 이름에 a가 포함되는 변수를 var2 뒤로 이동
 
 
 # └ 2.4 mutate(), transmute() : 열 추가 ----------------------------------------
-# mutate()를 사용하면 데이터프레임에 변수가 추가되어 반환되고, 
+# mutate()를 사용하면 데이터프레임에 변수가 추가되어 반환되고,
 # transmute()를 사용하면 추가한 변수만 얻을 수 있다.
 # ++ mutate() -----
 df %>% mutate(z = x + y)
-df %>% mutate(z = x + y, .before = 1)  # 계산 결과 z열을 맨 앞열에 추가
-df %>% mutate(z = x + y, .after = x)   # 계산 결과 z열을 X 뒷열에 추가
-df %>% mutate(speed = dist / time) %>% relocate(speed) # speed를 계산하고 맨 앞으로 옮김
+df %>% mutate(z = x + y, .before = 1) # 계산 결과 z열을 맨 앞열에 추가
+df %>% mutate(z = x + y, .after = x) # 계산 결과 z열을 X 뒷열에 추가
+df %>%
+  mutate(speed = dist / time) %>%
+  relocate(speed) # speed를 계산하고 맨 앞으로 옮김
 
 # 참고
 # ++ if_else() -----
@@ -225,12 +230,15 @@ case_when(
   condition1 ~ value_1,
   condition2 ~ value_2,
   ...,
-  .default =  ~ value_n)
+  .default = ~value_n
+)
 
 # 예시
-df %>% mutate(speed_tag = case_when(speed < 5 ~ "SLOW",
-                                    speed < 10 ~ "MIDDLE",
-                                    TRUE ~ "FAST"))
+df %>% mutate(speed_tag = case_when(
+  speed < 5 ~ "SLOW",
+  speed < 10 ~ "MIDDLE",
+  TRUE ~ "FAST"
+))
 
 
 # 3. 행 자료의 요약 ----------------------------------------------------------
@@ -241,32 +249,97 @@ df %>% sumamrise(total_num = n(), unique_num = n_distinct()) # 중복되지 않�
 # 4. 데이터프레임 그룹화 -------------------------------------------------------
 # └ 4.1 그룹 데이터프레임 생성: group_by() -------------------------------------
 # group_by()
-df %>% group_by(var1)          # var1이 같은 행끼리 그룹화
-df %>% group_by(var1, var2)    # var1, var2가 모두 같은 행끼리 그룹화
+df %>% group_by(var1) # var1이 같은 행끼리 그룹화
+df %>% group_by(var1, var2) # var1, var2가 모두 같은 행끼리 그룹화
 
-# ++ tally() : 각 그룹에 속하는 행의 개수 -----
-df %>% group_by(var1) %>% tally(name = "개수") # var1로 구분된 각 그룹의 데이터의 수를 반환
+# ++ tally(): 각 그룹에 속하는 행의 개수 -----
+df %>%
+  group_by(var1) %>%
+  tally(name = "개수") # var1로 구분된 각 그룹의 데이터의 수를 반환
 
-# 변수 추가해서 그룹 세분화 : .add=TRUE를 지정하지 않은 경우 그룹 변수가 새로운 변수로 대체
-df %>% group_by(var1) %>% group_by(var2, .add = TRUE)
+# 변수 추가해서 그룹 세분화: .add=TRUE를 지정하지 않은 경우 그룹 변수가 새로운 변수로 대체
+df %>%
+  group_by(var1) %>%
+  group_by(var2, .add = TRUE)
 
-# ++ ungroup() : 그룹 해제 -----
-df %>% group_by(var1) %>% summarise(total_num = n()) %>% ungroup()
+# ++ ungroup(): 그룹 해제 -----
+df %>%
+  group_by(var1) %>%
+  summarise(total_num = n()) %>%
+  ungroup()
 
 
 # └ 4.2 그룹 데이터 프레임(group_by())에 dplyr 함수 적용하기 -------------------
 # summarise()
 # var1 그룹별로 var2 평균
-df %>% group_by(var1) %>% summarise(var2_mean = mean(var2, na.rm=TRUE), .groups = "drop")
-# var1 그룹별로 var2가 결측값인 행의 개수
-df %>% group(var1) %>% summarise(na_count = sum(var2, na.rm=TRUE), .groups = "drop")
+df %>%
+  group_by(var1) %>%
+  summarise(var2_mean = mean(var2, na.rm = TRUE), .groups = "drop")
 
-# select() : 그룹을 구성하는 변수는 선택 대상이 아니어도 자동으로 선택된다.
+# var1 그룹별로 var2 합
+df %>%
+  group_by(var1) %>%
+  summarise(var2_sum = sum(var2, na.rm = TRUE), .groups = "drop")
+
+# n(): 그룹 내 행(측정치) 개수 세기
+df %>%
+  group_by(날짜) %>%
+  summarise(측정횟수 = n())
+
+# n_distinct(컬럼): 고유값 개수 세기
+# 예시: 연도별로 자료가 며칠치 있는지 확인(중복 제거된 날짜 개수)
+df %>%
+  group_by(연도) %>%
+  summarise(측정_날짜_수 = n_distinct(날짜))
+
+# which.max(): 최댓값의 위치(인덱스) 찾기
+# 예시: 하루 중 강수량이 가장 많았던 시각 확인
+df %>%
+  group_by(날짜) %>%
+  summarise(
+    최고강수량 = max(강수량, na.rm = TRUE),
+    최고강수시각 = 일시[which.max(강수량)]
+  )
+
+# which.min(): 최솟값의 위치(인덱스) 반환
+# 예시: 하루 중 기온이 가장 낮았던 시각 확인
+df %>%
+  group_by(날짜) %>%
+  summarise(
+    최저기온 = min(기온, na.rm = TRUE),
+    최저기온_시각 = 일시[which.min(기온)]
+  )
+
+# any(): 특정 조건 만족 여부 확인(주어진 벡터 안에 TRUE가 하나라도 있으면 TRUE를 반환)
+df %>%
+  group_by(var1) %>%
+  summarise(조건만족여부 = any(var2 > 10, na.rm = TRUE), .groups = "drop")
+
+# all(): 모든 값이 TRUE 인지 확인(주어진 벡터 안에 값들이 모두 TRUE인 경우 TRUE를 반환)
+df %>%
+  group_by(var1) %>%
+  summarise(모든경우조건만족여부 = all(var2 > 10, na.rm = TRUE), .groups = "drop")
+
+# first(): 첫 번째 값 가져오기(주어진 벡터에서 첫 번째 원소를 반환)
+# 그룹 안의 값들이 다 같다고 확신할 수 있을 때 대표값으로 하나만 뽑는 경우 사용
+df %>%
+  group_by(날짜) %>%
+  summarise(연도 = first(연도), .groups = "drop")
+
+# last(): 마지막 값 가져오기(주어진 벡터에서 마지막 원소를 반환)
+# 시간 순서대로 정렬된 데이터에서 가장 마지막 값을 알고 싶을 때 사용
+df %>%
+  group_by(날짜) %>%
+  summarise(마지막기온 = last(기온), .groups = "drop")
+
+# select(): 그룹을 구성하는 변수는 선택 대상이 아니어도 자동으로 선택된다.
 
 # arrange()
 # .by_group = TRUE 매개변수를 주면, 그룹 변수를 첫 번째 정렬 변수로 사용
 # var1로 정렬, var1이 같을 경우 var2 기준으로 정렬
-df %>% group_by(var1) %>% arrange(var2, .by_group = TRUE) 
+df %>%
+  group_by(var1) %>%
+  arrange(var2, .by_group = TRUE)
 
 # mutate(), transmute()
 # 그룹화된 데이터프레임에 mean(), max() 등을 적용하면 각 그룹별로 결과를 계산
@@ -277,11 +350,15 @@ df %>% group_by(var1) %>% arrange(var2, .by_group = TRUE)
 
 # slice()
 # var1의 그룹별로 var2가 가장 큰 열을 선택
-df %>% group_by(var1) %>% slice_max(var2, n = 1)
+df %>%
+  group_by(var1) %>%
+  slice_max(var2, n = 1)
 
 # n()
 # var1의 각 그룹별 데이터의 개수
-df %>% group_by(var1) %>% summarise(group_n = n()) 
+df %>%
+  group_by(var1) %>%
+  summarise(group_n = n())
 
 
 # 5. 여러 열을 대상으로 작업 수행 --------------------------------------------
@@ -298,7 +375,8 @@ df %>% group_by(var1) %>% summarise(group_n = n())
 
 # summarise()와 함께 사용
 # var1, var2 그룹별로 var3, var4 합계 계산 후 그룹화 해제
-df %>% group_by(var1, var2) %>%
+df %>%
+  group_by(var1, var2) %>%
   summarise(across(c(var3, var4), ~ sum(.)), .groups = "drop")
 
 # 모든 변수의 평균값을 계산
@@ -309,8 +387,10 @@ df %>% summarise_all(list(mean))
 df %>% summarise(across(where(is.numeric), mean))
 
 # 숫자형 변수의 평균을, 범주형 변수의 level의 개수
-df %>% summarise(across(where(is.numeric), mean),
-                 across(where(is.factor), nlevels))
+df %>% summarise(
+  across(where(is.numeric), mean),
+  across(where(is.factor), nlevels)
+)
 
 # 이름이 Num으로 시작하는 변수의 평균과 표준편차 산정
 df %>% summarise(across(starts_with("Num"), list(M = mean, SD = sd)))
@@ -342,7 +422,7 @@ df %>% mutate(날짜 = str_replace_all(날짜, "\\.", "-"))
 # var로 시작하는 변수의 값이 모두 5 이상인 행을 선택
 df %>% filter(across(starts_with("var"), ~ .x >= 5))
 
-# 적어도 하나의 결측값을 갖는 행을 모두 제거 
+# 적어도 하나의 결측값을 갖는 행을 모두 제거
 # 모든 행을 대상으로 하는 것이므로 .cols는 생략 가능
 df %>% filter(.fns = !is.na(.x))
 
@@ -362,7 +442,7 @@ numeric_columns <- df %>% pick(where(is.numeric))
 
 # 6. 행 단위 작업 --------------------------------------------------------------
 # ++ rowwise() -----
-df1 = tibble(x = 1:2, y = 3:4, z = 5:6)
+df1 <- tibble(x = 1:2, y = 3:4, z = 5:6)
 # A tibble: 2 x 3
 #       x     y     z
 #   <int> <int> <int>
@@ -370,9 +450,11 @@ df1 = tibble(x = 1:2, y = 3:4, z = 5:6)
 # 2     2     4     6
 
 # 각 행의 합 계산
-df1 %>% rowwise() %>% mutate(total = sum(c(x, y, z)))
+df1 %>%
+  rowwise() %>%
+  mutate(total = sum(c(x, y, z)))
 # A tibble: 2 x 4
-# Rowwise: 
+# Rowwise:
 #       x     y     z total
 #   <int> <int> <int> <int>
 # 1     1     3     5     9
@@ -389,12 +471,12 @@ df1 %>% mutate(total = sum(c(x, y, z)))
 # 그 외 다른 행 기준 계산 함수
 # ++ pmap_dbl() -----
 df %>% mutate(합계 = pmap_dbl(select(., 1:10), sum))
-df %>% mutate(t_sum = pmap_dbl(list(t1, t2, t3), sum)) 
+df %>% mutate(t_sum = pmap_dbl(list(t1, t2, t3), sum))
 df %>% mutate(t_sum = pmap_dbl(select(., starts_with("t")), sum))
 df %>% mutate(t_avg = pmap_dbl(list(t1, t2, t3), lift_vd(mean)))
 
 # ++ rowSums(), rowMeans() : 행렬에서 행 별로 합 및 평균을 구하는 함수 -----
-df %>% mutate(t_sum = rowSums(select_if(., is.numeric))) 
+df %>% mutate(t_sum = rowSums(select_if(., is.numeric)))
 df %>% mutate(t_avg = rowMeans(select(., -name)))
 
 
@@ -475,41 +557,43 @@ df1 %>% anti_join(df2, by = "결합 기준 변수")
 # ========== ▶ tidyr_데이터 정리 ◀ =============================================
 # 1. 자료 재구조화 -------------------------------------------------------------
 # └ 1.1 pivot_longer(): 데이터를 long format 으로 변경 -------------------------
-df %>% 
+df %>%
   pivot_longer(
-    cols = var1,         # long format 으로 재구조화할 칼럼,
-    names_to = "name",   # 재구조화된 항목의 칼럼명
+    cols = var1, # long format 으로 재구조화할 칼럼,
+    names_to = "name", # 재구조화된 항목의 칼럼명
     values_to = "value", # 재구조화된 수치의 칼럼명
-    names_sep = NULL,    # names_to 에 여러 정보를 포함할 경우, 구분자를 기준으로 칼럼 이름을 분할하는 인자
-    values_drop_na = FALSE  # 결측치 존재시 포함여부
-  ) 
+    names_sep = NULL, # names_to 에 여러 정보를 포함할 경우, 구분자를 기준으로 칼럼 이름을 분할하는 인자
+    values_drop_na = FALSE # 결측치 존재시 포함여부
+  )
 
 # 구분자 분할 예시
 # names_sep 인자에 .(dot) 을 기준으로 분할
 # .(dot)을 인식시키기 위해서 앞에 \\ 을 입력함
 # names_to 인자에 분할될 변수명을 정함
-pivot_longer(data = iris,
-             cols = Sepal.Length:Petal.Width,
-             names_to = c("name","name1"),
-             names_sep = '\\.')
+pivot_longer(
+  data = iris,
+  cols = Sepal.Length:Petal.Width,
+  names_to = c("name", "name1"),
+  names_sep = "\\."
+)
 
 # └ 1.2 pivot_wider() : 데이터를 wide format 으로 변경 -------------------------
 df %>%
   pivot_wider(
-    names_from = name,    # 현재 데이터에서 함수를 적용했을 때 칼럼명으로 갈 칼럼
-    values_from = value,  # 현재 데이터에서 함수를 적용했을 때 값으로 들어갈 칼럼
-    values_fill = NULL,   # 결측값이 있을 때 대체할 값
-    values_fn = NULL      # 값에 적용할 함수
+    names_from = name, # 현재 데이터에서 함수를 적용했을 때 칼럼명으로 갈 칼럼
+    values_from = value, # 현재 데이터에서 함수를 적용했을 때 값으로 들어갈 칼럼
+    values_fill = NULL, # 결측값이 있을 때 대체할 값
+    values_fn = NULL # 값에 적용할 함수
   )
 
-# 예시 
+# 예시
 df %>% pivot_wider(
-  names_from = 단위유역, 
+  names_from = 단위유역,
   names_glue = "{단위유역}_{.value}",
   names_sort = TRUE,
   names_vary = "slowest",
   values_from = c("젖소":"합계")
-  )
+)
 
 
 
@@ -520,9 +604,9 @@ df %>% pivot_wider(
 df %>% mutate(중복자료 = ifelse(duplicated(col), "중복", ""))
 
 # └ 중복자료 개수 확인 -----
-df %>% 
-  group_by(col) %>% 
-  mutate(중복자료 = length(col)) %>% 
+df %>%
+  group_by(col) %>%
+  mutate(중복자료 = length(col)) %>%
   ungroup()
 
 # └ 중복자료 제거 -----
@@ -547,20 +631,20 @@ df %>% distinct(across(everything(), round))
 df %>% filter(!is.na(코드))
 
 # └ 데이터프레임 전체 결측치 0으로 변경 -----
-df %>% mutate_all(~replace(., is.na(.), 0))
+df %>% mutate_all(~ replace(., is.na(.), 0))
 
 # └ 특정열 결측치 0으로 변경 -----
-df %>% mutate(across(c(var1, var2), ~replace(., is.na(.), 0)))
-df %>% mutate(across(where(is.numeric), ~replace(., is.na(.), 0)))
+df %>% mutate(across(c(var1, var2), ~ replace(., is.na(.), 0)))
+df %>% mutate(across(where(is.numeric), ~ replace(., is.na(.), 0)))
 
 # └ 특정열 0 및 빈칸을 결측치(NA)로 변경 -----
-df %>% mutate(across(c(var1, var2), ~replace(., . == 0, NA)))
-df %>% mutate(across(c(var1, var2), ~replace(., . == "", NA)))
-df %>% mutate(across(c(var1, var2), ~replace(., . == "" | . == 0, NA)))
-df %>% mutate(across(c(var1, var2), ~replace(., . %in% c("", 0), NA)))
+df %>% mutate(across(c(var1, var2), ~ replace(., . == 0, NA)))
+df %>% mutate(across(c(var1, var2), ~ replace(., . == "", NA)))
+df %>% mutate(across(c(var1, var2), ~ replace(., . == "" | . == 0, NA)))
+df %>% mutate(across(c(var1, var2), ~ replace(., . %in% c("", 0), NA)))
 
 # 참고(음수 값을 NA로 변경)
-df %>% mutate(across(c(var1, var2), ~replace(., . < 0, NA)))
+df %>% mutate(across(c(var1, var2), ~ replace(., . < 0, NA)))
 
 # ========== ▶ stringr_텍스트 관련 ◀ ===========================================
 # 1. Detect Matches ----------------------------------------------------
@@ -583,7 +667,8 @@ str_count(string, pattern)
 # 2. Subset Strings ----------------------------------------------------
 # ++ str_sub() -----
 str_sub(string, start = 1L, end = -1L)
-str_sub(fruit, 1, 3); str_sub(fruit, -2)
+str_sub(fruit, 1, 3)
+str_sub(fruit, -2)
 
 # ++ str_subset() -----
 str_subset(string, pattern, negate = FALSE)
@@ -602,8 +687,8 @@ str_match(sentences, "(a|the) ([^ +])")
 
 # 3. Join and Split ----------------------------------------------------
 # ++ str_c() -----
-str_c(..., sep = "", collapse = NULL) 
-# sep : 각각의 원소들을 이어줄 때 사용 
+str_c(..., sep = "", collapse = NULL)
+# sep : 각각의 원소들을 이어줄 때 사용
 # collapse : 배열 원소들을 이어줄 때 사용
 str_c("prefix", c("a0", "a1", "a2"), "suffix")
 str_c("prefix-", c("a0", "a1", "a2"), "-suffix")
@@ -618,20 +703,22 @@ str_c("a0", "a1", "a2", sep = ", ")
 str_c("a0", "a1", "a2", collapse = ", ")
 
 # ++ str_flatten()
-str_flatten(string, collapse = "") 
+str_flatten(string, collapse = "")
 
 # ++ str_dup()
-str_dup(string, times) 
+str_dup(string, times)
 
 # ++ str_split_fixed()
-str_split_fixed(string, pattern, n) 
+str_split_fixed(string, pattern, n)
 
 # ++ str_glue()
 str_glue(..., .sep = "", .envir = parent.frame())
 
 # ++ str_glue_data()
-str_glue_data(.x, ..., .sep = "", .envir =
-                parent.frame(), .na = "NA")
+str_glue_data(.x, ...,
+  .sep = "", .envir =
+    parent.frame(), .na = "NA"
+)
 
 # 4. Manage Lengths ----------------------------------------------------
 # ++ str_length() -----
@@ -667,13 +754,17 @@ str_replace_all(fruit, "p", "-")
 
 # 6. Order Strings ----------------------------------------------------
 # ++ str_order()
-str_order(x, decreasing = FALSE, na_last = TRUE, 
-          locale = "en", numeric = FALSE, ...)
+str_order(x,
+  decreasing = FALSE, na_last = TRUE,
+  locale = "en", numeric = FALSE, ...
+)
 str_order(fruit)
 
 # ++ str_sort()
-str_sort(x, decreasing = FALSE, na_last = TRUE, 
-         locale = "en", numeric = FALSE, ...)
+str_sort(x,
+  decreasing = FALSE, na_last = TRUE,
+  locale = "en", numeric = FALSE, ...
+)
 str_sort(fruit)
 
 
@@ -681,7 +772,7 @@ str_sort(fruit)
 # └ 그래프용 Noto Sans KR 폰트 추가 -----
 library(showtext)
 
-font_add_google('Noto Sans KR', 'notosanskr')
+font_add_google("Noto Sans KR", "notosanskr")
 showtext_auto()
 
 
@@ -690,8 +781,8 @@ showtext_auto()
 df %>% rowid_to_column(var = "ID")
 
 # └ e 없이 숫자 표시 -----
-options(scipen=999)  # 지수 표기에서 숫자 표기로 변경
-options(scipen=0)    # 다시 기본설정으로 변경
+options(scipen = 999) # 지수 표기에서 숫자 표기로 변경
+options(scipen = 0) # 다시 기본설정으로 변경
 
 # └ 시군, 단위유역 순서 별 정렬 -----
 df %>%
@@ -706,20 +797,20 @@ df %>%
       "합계", "춘천시", "원주시", "강릉시", "태백시", "삼척시", "홍천군",
       "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군",
       "양구군", "인제군", "고성군", "동해시", "속초시", "양양군"
-    ))) %>% 
+    ))
+  ) %>%
   arrange(단위유역, 시군)
 
 # └ 소계 계산(janitor::adorn_totals) -----
 library(janitor)
 
-df %>% 
-  group_by(시군) %>% 
+df %>%
+  group_by(시군) %>%
   group_modify(~ .x %>% adorn_totals(where = "row", name = "소계"))
 
-df %>% 
+df %>%
   # 강원도 총계 계산
-  adorn_totals(where = "row", fill = "합계", name = "강원도") %>% 
+  adorn_totals(where = "row", fill = "합계", name = "강원도") %>%
   # 시군별 소계 계산
-  group_by(시군) %>% 
+  group_by(시군) %>%
   group_modify(~ .x %>% adorn_totals(where = "row", name = "소계"))
-
