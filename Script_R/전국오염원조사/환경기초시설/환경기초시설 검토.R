@@ -6,7 +6,7 @@ library(readxl)
 library(writexl)
 
 ### 반올림 사용자 정의 함수 로드
-source("Script_R/Function/round2func.R")
+source("Script_R/Function/func_round2.R")
 
 
 
@@ -31,10 +31,10 @@ for (file in files) {
 ## *****************************************************************************
 
 ## 환경기초시설 유역 현황
-stp_유역 <- read_excel("전국오염원조사/환경기초시설/환경기초시설 현황/전오사 환경기초시설 현황 정리.xlsx",
-                      skip = 1) %>% 
-  select(2, 3, 13) %>% 
-  mutate(단위유역 = str_remove_all(소유역명, "\\d"), .after = 처리시설코드) %>% 
+stp_유역 <- read_excel(
+  "전국오염원조사/환경기초시설/환경기초시설 현황/환경기초시설_현황.xlsx"
+  ) %>% 
+  select(처리시설명, 처리시설코드, 단위유역) %>% 
   rename(시설코드 = 처리시설코드)
 
 
@@ -102,10 +102,10 @@ stp_방류량_정리 <- stp_방류량_원본 %>%
   distinct()
 
 ##### 365일 날짜 데이터 생성 ---------------------------------------------------
-## 2014년 ~ 2022년
+## 2014년 ~ 2024년
 date <- data.frame(date = seq(
   as.Date("2014/01/01", "%Y/%m/%d"), 
-  as.Date("2022/12/31", "%Y/%m/%d"),
+  as.Date("2024/12/31", "%Y/%m/%d"),
   1
 )) %>%
   mutate(

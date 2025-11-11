@@ -16,7 +16,7 @@ years <- (start_year + 2):final_year
 ### 데이터 불러오기 및 전처리(측정 자료에 목표수질, 권역, 강원도 여부 등 추가)
 target <- read_excel("수질분석/목표수질.xlsx")
 
-obs <- read_excel("수질분석/총량측정망_2007_2025.xlsx") %>%
+obs <- read_excel("수질분석/총량측정망_전체_2007_2025.xlsx") %>%
   left_join(target, by = "총량지점명") %>%
   filter(연도 >= start_year) %>% 
   select(-c(수온, pH, EC, DO, COD, SS, TN))

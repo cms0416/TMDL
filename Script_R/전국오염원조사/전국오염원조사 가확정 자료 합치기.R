@@ -18,12 +18,12 @@ files <- list.files(
 livestock <- files %>%
   map_dfr(read_excel, skip = 6, col_names = F)
 
-# 조사 미완료 시군(화천, 고성) 전년도 자료로 붙여넣기
+# 조사 미완료 시군(고성) 전년도 자료로 붙여넣기
 livestock_old <- read_excel(
   "전국오염원조사/축산계/2023년기준_전국오염원_조사자료_축산계_가축분뇨현황.xlsx",
   skip = 6, col_names = F
   ) %>%
-  filter(`...11` %in% c("화천군", "고성군"))
+  filter(`...11` %in% c("고성군"))
 
 livestock %<>%
   bind_rows(livestock_old)
