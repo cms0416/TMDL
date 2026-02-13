@@ -310,6 +310,7 @@ files <- list.files(
   group_by(연도, 시군, 지목) %>%
   summarise(면적 = sum(면적), .groups = "drop") %>% 
   subtotal_2(., "지목") %>% 
+  # 면적 단위 변환(㎡ → ㎢)
   mutate(면적 = round(면적 / (10^6))) %>% 
   pivot_wider(names_from = 지목, values_from = 면적) %>% 
   mutate(총면적 = 합계) %>% 
@@ -1286,6 +1287,99 @@ dev.off()
   )
 
   dev.off()
+
+
+    
+##### 홍천군 교육자료용 그래프 ################################################# 
+
+  ### 그래프 pdf파일 생성 경로 및 사이즈 설정
+  pdf("E:/Coding/TMDL/전국오염원조사/Output/Plot/홍천군_그래프(8.2x4.3).pdf",
+      width = 8.2, height = 4.3)
   
   
+  ## 그래프_축산계_시군별 소(한우 + 젖소) 사육두수 -----
+  축산계_total %>% 
+    # 연도 선택 및 도전체 합계 삭제
+    filter(연도 == 기준연도, 시군 != "강원도", 축종 %in% c("한우", "젖소")) %>%
+    select(-농가수) %>% 
+    pivot_wider(
+      names_from = 축종,
+      values_from = 사육두수
+    ) %>% 
+    mutate_all(~ replace(., is.na(.), 0)) %>% 
+    mutate(소 = 한우 + 젖소) %>% 
+    # "시", "군" 삭제
+    mutate(시군 = str_remove(시군, "(시|군)")) %>% 
+    ggplot(aes(x = reorder(시군, -소), y = 소/1000)) +
+    geom_bar(stat='identity', fill = "deepskyblue3", width = 0.7) +
+    geom_text(aes(label = comma(round(소/1000, 2), accuracy = 0.01)), size = 3.5, 
+              vjust = -0.5, color = "black", check_overlap = TRUE) +
+    scale_y_continuous(name = "소 사육두수(천두)", breaks = seq(0, 100, by = 10), 
+                       limits = c(0, 60), labels = scales::comma) +
+    theme_calc(base_family = "notosanskr") +
+    theme(
+      line = element_line(linewidth = 0.1),
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+      axis.text.x = element_text(size = 11, color = "black"),
+      axis.text.y = element_text(size = 11, color = "black"),
+      axis.ticks.x.top = element_line(),
+      axis.ticks.y.right = element_line()
+    )
+  
+  
+  ## 그래프_산업계_시군별 폐수 방류량 -----
+  산업계_total %>% 
+    # 연도 선택 및 도전체 합계 삭제
+    filter(연도 == 기준연도, 시군 != "강원도", 규모 == "합계") %>% 
+    # "시", "군" 삭제
+    mutate(시군 = str_remove(시군, "(시|군)")) %>% 
+    ggplot(aes(x = reorder(시군, -폐수방류량), y = 폐수방류량)) +
+    geom_bar(position = position_dodge(0.8), stat='identity', 
+             fill = "deepskyblue3", width = 0.7) +
+    scale_y_continuous(name = "폐수 방류량(톤/일)", breaks = seq(0, 100000, by = 3000), 
+                       limits = c(0, 13000), labels = scales::comma) +
+    theme_calc(base_family = "notosanskr") +
+    theme(
+      line = element_line(linewidth = 0.1),
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+      axis.text.x = element_text(size = 11, color = "black"),
+      axis.text.y = element_text(size = 11, color = "black"),
+      axis.ticks.x.top = element_line(),
+      axis.ticks.y.right = element_line()
+    )
+  
+  ## 그래프_토지계_시군별 농경지 면적 -----
+  토지계_total %>% 
+    # 연도 선택 및 도전체 합계 삭제
+    filter(연도 == 기준연도, 시군 != "강원도", 지목 %in% c("전", "답")) %>% 
+    # "시", "군" 삭제
+    mutate(시군 = str_remove(시군, "(시|군)")) %>% 
+    ggplot(aes(x = reorder(시군, -면적), y = 면적, fill = 지목)) +
+    geom_bar(stat='identity', width = 0.7) +
+    geom_text(aes(label =comma(면적)), size = 3, 
+              position = position_stack(vjust = 0.5),
+              color = "black", check_overlap = TRUE) +
+    #geom_text(aes(y = 총면적, label = comma(총면적)), size = 3.5, vjust = -0.5,
+    #          check_overlap = TRUE) +
+    scale_y_continuous(name = "토지면적(㎢)", breaks = seq(0, 100000, by = 50), 
+                       limits = c(0, 220), labels = scales::comma) +
+    theme_calc(base_family = "notosanskr") +
+    theme(
+      line = element_line(linewidth = 0.1),
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 13, face = "bold", color = "black"),
+      axis.text.x = element_text(size = 11, color = "black"),
+      axis.text.y = element_text(size = 11, color = "black"),
+      axis.ticks.x.top = element_line(),
+      axis.ticks.y.right = element_line(),
+      legend.title = element_blank(),
+      legend.text = element_text(size = 11),
+      legend.position = "inside",
+      legend.position.inside = c(0.90, 0.93),
+      legend.direction = "horizontal"
+    )
+  
+  dev.off()
   

@@ -57,9 +57,19 @@ obs_1 <- obs %>%
 
 계절별_평균_wide <- 계절별_평균 %>% 
     pivot_wider(
-    names_from = 수계,
+    names_from = 계절,
     values_from = 횟수
   )
+
+동절기_타계절_비교 <- obs_1 %>% 
+  group_by(수계, 총량지점명, 연도, 월, 계절) %>% 
+  summarise(across(횟수, ~ sum(.)), .groups = "drop") %>% 
+  group_by(수계, 월, 계절) %>% 
+  summarise(across(횟수, ~ round(mean(.), 2)), .groups = "drop") %>% 
+  mutate(동절기 = ifelse(월 %in% c(1, 2, 12), "동절기", "기타")) %>% 
+  group_by(수계, 동절기) %>% 
+  summarise(across(횟수, ~ round(mean(.), 2)), .groups = "drop")
+
 
 월별_평균 <- obs_1 %>% 
   group_by(수계, 총량지점명, 연도, 월) %>% 
@@ -69,7 +79,7 @@ obs_1 <- obs %>%
 
 월별_평균_wide <- 월별_평균 %>% 
   pivot_wider(
-    names_from = 수계,
+    names_from = 월,
     values_from = 횟수
   )
 
@@ -86,9 +96,9 @@ obs_1 <- obs %>%
 
 
 ##########  한강수계 정리  #####################################################
-한강 <- read_excel("수질분석/총량측정망_2007_2024.xlsx") %>% 
+한강 <- read_excel("수질분석/총량측정망_2007_2025.xlsx") %>% 
   select(총량지점명, 일자, BOD, TP, 유량, 연도, 월) %>% 
-  filter(연도 != 2024) %>% 
+  filter(총량지점명 != "낙본A") %>% 
   # 월별로 계절 정의
   season() %>% 
   mutate(횟수 = 1) %>% 
@@ -104,8 +114,8 @@ obs_1 <- obs %>%
 ###################################  그래프  ###################################
 ##****************************************************************************##
 
-pdf("E:/Coding/TMDL/수질분석/4대강수계/총량측정망현황_그래프(8.2x3.3).pdf",
-    width = 8.2, height = 3.3)
+pdf("E:/Coding/TMDL/수질분석/4대강수계/총량측정망현황_그래프(8.2x5.5).pdf",
+    width = 8.2, height = 5.5)
 
 ## 계절별 측정 횟수 평균 -----
 계절별_평균 %>% 

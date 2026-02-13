@@ -6,7 +6,7 @@ library(readxl)
 library(writexl)
 
 #####  연도 설정  ##############################################################
-final_year <- 2024
+final_year <- 2025
 period <- 5
 years <- (final_year - period + 1):final_year
 
@@ -682,7 +682,8 @@ share_토지계 <- share %>%
   left_join(토지계_3동리, by = c("동리코드", "연도", "시군", "분류")) %>%
   mutate(총면적 = 토지계 * 면적) %>%
   group_by(연도, 단위유역, 시군, 분류) %>%
-  summarise(총면적 = round2(sum(총면적, na.rm = T) * 10^-6, 3), .groups = "drop") %>%
+  # 면적 합산 및 단위 변환(㎡ → ㎢)
+  summarise(총면적 = round2(sum(총면적, na.rm = T) / (10^6), 3), .groups = "drop") %>%
   # 소계 계산
   subtotal(., "분류") %>%
   # 전망자료에는 기타수계가 포함되지 않으므로
